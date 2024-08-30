@@ -10,11 +10,14 @@ class Application(tk.Tk):
 
         self.title("No Save Loaded")
         self.geometry("600x400")
+        self.current_file = None
         self.defaultFont = font.nametofont("TkDefaultFont") 
         self.defaultFont.configure(family="Times New Roman")
         
         self.entry_boxes = {}
         self.info_boxes = {}
+        self.entry_info = {}
+        self.infob_info = {}
         self.row_counter = 1
         self.label_num = 2 
         
@@ -30,9 +33,7 @@ class Application(tk.Tk):
         self.main_canvas.pack(side= tk.LEFT,fill=tk.BOTH,expand=True)
         self.frame_1 = tk.Frame(self.main_canvas)
 
-       # self.frame_2 = tk.Frame(self.main_canvas)
-     #   self.frame_2.bind("<Configure>", self.on_configure)
-        self.main_canvas.create_window((2,2),window = self.frame_1,anchor="nw")
+        self.main_canvas.create_window((4,4),window = self.frame_1,anchor="nw")
        # self.main_canvas.create_window((600,0),window=self.frame_2,anchor = "NE")
         self.frame_1.bind("<Configure>", self.on_configure) 
         self.scrollbar = tk.Scrollbar(self, orient=tk.VERTICAL, command=self.main_canvas.yview)
@@ -42,11 +43,11 @@ class Application(tk.Tk):
         self.another_tbox = tk.Button(self.frame_1,text="Create Text Box",command=self.make_new_entry)
         self.another_tbox.grid(row=1,column=0)
 
-        self.another_tbox1 = tk.Button(self.frame_1,text="Initialize",command=self.make_new_entry)
+        self.another_tbox1 = tk.Button(self.frame_1,text="Save State",command=self.create_new_state)
         self.another_tbox1.grid(row=2,column=0)
         #self.new_lentry = tk.Entry(self.frame_1,bg="gainsboro",fg="grey",width=20,font=("Times New Roman",17))
         self.new_tbox = scrolledtext.ScrolledText(self.frame_1,wrap=tk.WORD,width=55,height=7)
-       # self.update_listbox()
+
 
     def on_configure(self,event):
         self.main_canvas.configure(scrollregion=self.main_canvas.bbox("all"))
@@ -64,6 +65,7 @@ class Application(tk.Tk):
 
         self.info_boxes["infobox"+str(self.row_counter)] = scrolledtext.ScrolledText(self.frame_1,wrap=tk.WORD,width=55,height=7)
         self.info_boxes["infobox"+str(self.row_counter)].grid(row=self.row_counter+1,column=1,pady=3,sticky="w")
+        
     def clear_placeholder(self, event):
         if event.widget.get()== "Create A Label":
             event.widget.delete(0, tk.END)
@@ -76,8 +78,54 @@ class Application(tk.Tk):
         event.widget.delete(0, tk.END)
         self.focus_set()
         event.widget.insert(0,self.new_stuff)
- #  def new_window(self):
+
+    # def save_text_boxes(self):
+
+   # def save_entry_boxes(self):
         
+ #  def new_window(self):
+    def create_new_state(self):
+        print(self.info_boxes)
+        print(self.entry_boxes)
+        # Prompt for a new state name
+        infom = {}
+        entrym = {}
+        master = {}
+        n = 0 
+        for i in self.info_boxes.values():
+            infom["infobox"+str(n)] = str(i)
+            n+=1 
+        n=0 
+        for i in self.entry_boxes.values():
+            entrym["entry"+str(n)] = str(i)
+            n+=1
+        new_state_name = filedialog.asksaveasfilename(
+            initialdir=self.save_directory,
+            defaultextension=".json",
+            filetypes=[("JSON", "*.json"), ("All Files", "*.*")],
+            title="Create New State"
+        )
+        if new_state_name:
+            master["Labels"] = infom
+            master["Entry Boxes"] = entrym 
+            # Initialize a new state
+            leak = open(new_state_name,"w")
+            json.dump(master,leak,indent=1)
+            self.current_file = new_state_name
+            self.reset_widgets()    
+    def reset_widgets(self):
+        for widget in self.frame_1.winfo_children():
+            widget.destroy()
+        self.entry_boxes = {}
+        self.info_boxes = {}
+        self.entry_info = {}
+        self.infob_info = {}
+        self.another_tbox = tk.Button(self.frame_1,text="Create Text Box",command=self.make_new_entry)
+        self.another_tbox.grid(row=1,column=0)
+
+        self.another_tbox1 = tk.Button(self.frame_1,text="Save State",command=self.create_new_state)
+        self.another_tbox1.grid(row=2,column=0)
+
 
 if __name__ == "__main__":
     app = Application()
