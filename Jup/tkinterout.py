@@ -20,6 +20,8 @@ class Application(tk.Tk):
         self.infob_info = {}
         self.row_counter = 1
         self.label_num = 2 
+        self.get_box = 3 
+        self.get_text = 4 
         
         self.current_file=None
         self.save_directory = "saved_states"
@@ -55,6 +57,9 @@ class Application(tk.Tk):
     def make_new_entry(self):
         self.prefix_placeholder = "Create A Label"
         self.row_counter+=2
+        self.label_num += 2 
+        self.get_box += 2 
+        self.get_text += 2
         self.new_stuff = ""
         self.entry_boxes["Entry"+str(self.row_counter)] = tk.Entry(self.frame_1)
         self.entry_boxes["Entry"+str(self.row_counter)].insert(0,self.prefix_placeholder)
@@ -63,8 +68,9 @@ class Application(tk.Tk):
         self.entry_boxes["Entry"+str(self.row_counter)].bind("<FocusOut>",self.add_placeholder) 
         self.entry_boxes["Entry"+str(self.row_counter)].bind("<Return>",self.set_labellers)
 
-        self.info_boxes["infobox"+str(self.row_counter)] = scrolledtext.ScrolledText(self.frame_1,wrap=tk.WORD,width=55,height=7)
-        self.info_boxes["infobox"+str(self.row_counter)].grid(row=self.row_counter+1,column=1,pady=3,sticky="w")
+        self.info_boxes["infobox"+str(self.label_num)] = scrolledtext.ScrolledText(self.frame_1,wrap=tk.WORD,width=55,height=7)
+        self.info_boxes["infobox"+str(self.label_num)].grid(row=self.row_counter+1,column=1,pady=3,sticky="w")
+        self.info_boxes["infobox"+str(self.label_num)].bind("<FocusOut>",self.save_text_boxes)
         
     def clear_placeholder(self, event):
         if event.widget.get()== "Create A Label":
@@ -73,23 +79,27 @@ class Application(tk.Tk):
     def add_placeholder(self, event):
         if event.widget.get() == "":
             event.widget.insert(0,self.prefix_placeholder)
+            self.entry_info["st_label"+str(self.get_text)] = event.widget.get()
     def set_labellers(self,event):
         self.new_stuff = event.widget.get()
         event.widget.delete(0, tk.END)
         self.focus_set()
         event.widget.insert(0,self.new_stuff)
+        self.entry_info["st_label"+str(self.get_text)] = self.new_stuff
 
-    # def save_text_boxes(self):
-
+    def save_text_boxes(self,event):
+        self.infob_info["stored_data"+str(self.get_box)] = event.widget.get("1.0",tk.END)
    # def save_entry_boxes(self):
         
  #  def new_window(self):
     def create_new_state(self):
         print(self.info_boxes)
-        print(self.entry_boxes)
+        print(self.infob_info)
         # Prompt for a new state name
         infom = {}
         entrym = {}
+        meta = {}
+        ticket = {}
         master = {}
         n = 0 
         for i in self.info_boxes.values():
@@ -98,6 +108,14 @@ class Application(tk.Tk):
         n=0 
         for i in self.entry_boxes.values():
             entrym["entry"+str(n)] = str(i)
+            n+=1
+        n=0
+        for i in self.entry_info.values():
+            ticket["labels"+str(n)] = str(i)
+            n+=1
+        n=0
+        for i in self.infob_info.values():
+            meta["text"+str(n)] = str(i)
             n+=1
         new_state_name = filedialog.asksaveasfilename(
             initialdir=self.save_directory,
@@ -108,6 +126,8 @@ class Application(tk.Tk):
         if new_state_name:
             master["Labels"] = infom
             master["Entry Boxes"] = entrym 
+            master["Label Text"] = ticket 
+            master["Box Text"] = meta
             # Initialize a new state
             leak = open(new_state_name,"w")
             json.dump(master,leak,indent=1)
