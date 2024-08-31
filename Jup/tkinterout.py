@@ -18,10 +18,10 @@ class Application(tk.Tk):
         self.info_boxes = {}
         self.entry_info = {}
         self.infob_info = {}
+        self.other_frames = {}
         self.row_counter = 1
         self.label_num = 2 
-        self.get_box = 3 
-        self.get_text = 4 
+
         
         self.current_file=None
         self.save_directory = "saved_states"
@@ -36,7 +36,6 @@ class Application(tk.Tk):
         self.frame_1 = tk.Frame(self.main_canvas)
 
         self.main_canvas.create_window((4,4),window = self.frame_1,anchor="nw")
-       # self.main_canvas.create_window((600,0),window=self.frame_2,anchor = "NE")
         self.frame_1.bind("<Configure>", self.on_configure) 
         self.scrollbar = tk.Scrollbar(self, orient=tk.VERTICAL, command=self.main_canvas.yview)
         self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
@@ -58,8 +57,8 @@ class Application(tk.Tk):
         self.prefix_placeholder = "Create A Label"
         self.row_counter+=2
         self.label_num += 2 
-        self.get_box += 2 
-        self.get_text += 2
+        #self.get_box += 2 
+       # self.get_text += 2
         self.new_stuff = ""
         self.entry_boxes["Entry"+str(self.row_counter)] = tk.Entry(self.frame_1)
         self.entry_boxes["Entry"+str(self.row_counter)].insert(0,self.prefix_placeholder)
@@ -79,16 +78,18 @@ class Application(tk.Tk):
     def add_placeholder(self, event):
         if event.widget.get() == "":
             event.widget.insert(0,self.prefix_placeholder)
-            self.entry_info["st_label"+str(self.get_text)] = event.widget.get()
+        elif event.widget.get() != "":
+            self.entry_info[event.widget] = event.widget.get()
     def set_labellers(self,event):
-        self.new_stuff = event.widget.get()
-        event.widget.delete(0, tk.END)
-        self.focus_set()
-        event.widget.insert(0,self.new_stuff)
-        self.entry_info["st_label"+str(self.get_text)] = self.new_stuff
+        if event.widget.get() != "":
+            self.new_stuff = event.widget.get()
+            event.widget.delete(0, tk.END)
+            self.focus_set()
+            event.widget.insert(0,self.new_stuff)
+            self.entry_info[event.widget] = self.new_stuff
 
     def save_text_boxes(self,event):
-        self.infob_info["stored_data"+str(self.get_box)] = event.widget.get("1.0",tk.END)
+        self.infob_info[event.widget] = event.widget.get("1.0",tk.END)
    # def save_entry_boxes(self):
         
  #  def new_window(self):
