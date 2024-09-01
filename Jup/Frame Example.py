@@ -1,39 +1,49 @@
 import tkinter as tk
+from tkinter import ttk
 
-# Create the main window
+def on_button_click():
+    print("Button clicked!")
+
 root = tk.Tk()
-root.title("Separate Grids Example")
+root.title("Scrollable Frame with Fixed Buttons")
 
-# Create the frame for the Listbox
-listbox_frame = tk.Frame(root)
-listbox_frame.grid(row=0, column=0, sticky="nsew")
+# Create a frame for the always-visible buttons on the left
+button_frame = tk.Frame(root)
+button_frame.pack(side=tk.LEFT, fill=tk.Y)
 
-# Create a Listbox widget inside listbox_frame
-listbox = tk.Listbox(listbox_frame, width=40, height=20)
-listbox.pack(fill="both", expand=True)
+# Add buttons to the button frame, aligned vertically
+button1 = tk.Button(button_frame, text="Button 1", command=on_button_click)
+button1.pack(padx=5, pady=5, anchor='w')
 
-# Add some items to the Listbox
-for i in range(100):
-    listbox.insert(tk.END, f"Item {i+1}")
+button2 = tk.Button(button_frame, text="Button 2", command=on_button_click)
+button2.pack(padx=5, pady=5, anchor='w')
 
-# Create the frame for the buttons
-buttons_frame = tk.Frame(root)
-buttons_frame.grid(row=0, column=1, sticky="nsew")
+button3 = tk.Button(button_frame, text="Button 3", command=on_button_click)
+button3.pack(padx=5, pady=5, anchor='w')
 
-# Create a few buttons inside buttons_frame
-button1 = tk.Button(buttons_frame, text="Button 1")
-button1.grid(row=0, column=0, padx=5, pady=5)
+# Create a canvas for the scrollable content
+canvas = tk.Canvas(root)
+canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-button2 = tk.Button(buttons_frame, text="Button 2")
-button2.grid(row=1, column=0, padx=5, pady=5)
+# Add a scrollbar to the canvas
+scrollbar = ttk.Scrollbar(root, orient="vertical", command=canvas.yview)
+scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-button3 = tk.Button(buttons_frame, text="Button 3")
-button3.grid(row=2, column=0, padx=5, pady=5)
+# Configure the canvas to work with the scrollbar
+canvas.configure(yscrollcommand=scrollbar.set)
 
-# Configure grid weights for resizing
-root.grid_columnconfigure(0, weight=1)  # Listbox frame will expand
-root.grid_columnconfigure(1, weight=0)  # Buttons frame will stay compact
-root.grid_rowconfigure(0, weight=1)
+# Create a frame inside the canvas to hold the scrollable content
+scrollable_frame = tk.Frame(canvas)
 
-# Run the Tkinter main loop
+# Create a window in the canvas to hold the scrollable frame
+canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+
+# Ensure the scrollable frame expands with the window size
+scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+
+# Add content to the scrollable frame
+for i in range(20):
+    tk.Label(scrollable_frame, text=f"Label {i+1}").pack(pady=5, padx=5)
+
+# Start the Tkinter event loop
 root.mainloop()
