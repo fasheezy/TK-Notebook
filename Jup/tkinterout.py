@@ -1,9 +1,9 @@
 import tkinter as tk
 import json
 import os
-from tkinter import filedialog,messagebox,font, Tk,ttk,scrolledtext 
+from tkinter import filedialog,messagebox,font, Tk,ttk,scrolledtext
 from sympy import sympify,SympifyError
-#from common_funcs import * 
+from IPython.display import clear_output as co
 class Application(tk.Tk):
     def __init__(self, *args,**kwargs):
         super().__init__(*args,**kwargs)
@@ -11,18 +11,22 @@ class Application(tk.Tk):
         self.title("No Save Loaded")
         self.geometry("600x400")
         self.current_file = None
-        self.defaultFont = font.nametofont("TkDefaultFont") 
+        self.defaultFont = font.nametofont("TkDefaultFont")
         self.defaultFont.configure(family="Times New Roman")
-        
+
+
         self.entry_boxes = {}
         self.info_boxes = {}
         self.entry_info = {}
         self.infob_info = {}
+        self.new_labels = {}
         self.other_frames = {}
-        self.row_counter = 1
-        self.label_num = 2 
+        self.label_num = 1
+        self.row_counter = 2
 
-        
+
+        self.button_frame = tk.Frame(self)
+        self.button_frame.pack(side=tk.LEFT,fill=tk.Y)
         self.current_file=None
         self.save_directory = "saved_states"
         self.listryoshka = "Image_files"
@@ -30,47 +34,105 @@ class Application(tk.Tk):
         os.makedirs(self.save_directory, exist_ok=True)
         self.equation_boxes = []
         os.makedirs(self.save_directory, exist_ok=True)
-        
+
         self.main_canvas = tk.Canvas(self)
-        self.main_canvas.pack(side= tk.LEFT,fill=tk.BOTH,expand=True)
+        self.main_canvas.pack(side=tk.LEFT,fill=tk.BOTH,expand=True)
         self.frame_1 = tk.Frame(self.main_canvas)
 
         self.main_canvas.create_window((4,4),window = self.frame_1,anchor="nw")
-        self.frame_1.bind("<Configure>", self.on_configure) 
+        self.frame_1.bind("<Configure>", self.on_configure)
         self.scrollbar = tk.Scrollbar(self, orient=tk.VERTICAL, command=self.main_canvas.yview)
         self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.main_canvas.configure(yscrollcommand=self.scrollbar.set)
 
-        self.another_tbox = tk.Button(self.frame_1,text="Create Text Box",command=self.make_new_entry)
-        self.another_tbox.grid(row=1,column=0)
-
-        self.another_tbox1 = tk.Button(self.frame_1,text="Save State",command=self.create_new_state)
-        self.another_tbox1.grid(row=2,column=0)
-        #self.new_lentry = tk.Entry(self.frame_1,bg="gainsboro",fg="grey",width=20,font=("Times New Roman",17))
-        self.new_tbox = scrolledtext.ScrolledText(self.frame_1,wrap=tk.WORD,width=55,height=7)
-
-
+        self.another_tbox = tk.Button(self.button_frame,text="Save State",command=self.create_new_state)
+        self.another_tbox.pack(fill="x")
+        self.button1 = tk.Button(self.button_frame,text="Create Text Boxes",command = self.make_new_entry)
+        self.button2 = tk.Button(self.button_frame,text="Create Equation",command=self.make_new_equation)
+        self.button3 = tk.Button(self.button_frame,text="Create Text Box",command=self.make_new_entry)
+        self.button1.pack(fill="x")
+        self.button2.pack(fill="x")
+        self.button3.pack(fill="x")
+        self.prefix_placeholder = "Create A Label"
     def on_configure(self,event):
         self.main_canvas.configure(scrollregion=self.main_canvas.bbox("all"))
+    def make_labels(self):
+        self.label_num+=2
+        self.entry_boxes["Entry"+str(self.label_num)] = tk.Entry(self.frame_1)
+        self.entry_boxes["Entry"+str(self.label_num)].insert(0,self.prefix_placeholder)
+        self.entry_boxes["Entry"+str(self.label_num)].grid(row=self.label_num,column=1,pady=3,sticky="w")
+        self.entry_boxes["Entry"+str(self.label_num)].bind("<FocusIn>",self.clear_placeholder)
+        self.entry_boxes["Entry"+str(self.label_num)].bind("<FocusOut>",self.add_placeholder)
+        self.entry_boxes["Entry"+str(self.label_num)].bind("<Return>",self.set_labellers)
 
-    def make_new_entry(self):
-        self.prefix_placeholder = "Create A Label"
-        self.row_counter+=2
-        self.label_num += 2 
-        #self.get_box += 2 
-       # self.get_text += 2
+    def make_new_equation(self):
+        self.make_labels()
+        self.row_counter += 2
+        self.info_boxes["Equation Box"+str(self.row_counter)] = tk.Text(self.frame_1,height = 2)
+        self.info_boxes["Equation Box"+str(self.row_counter)].grid(row=self.row_counter,column=1,sticky="ew")
+        self.info_boxes["Equation Box"+str(self.row_counter)].insert(tk.END,"")
+        self.info_boxes["Equation Box"+str(self.row_counter)].bind("<KeyRelease>",self.process_equation)
         self.new_stuff = ""
-        self.entry_boxes["Entry"+str(self.row_counter)] = tk.Entry(self.frame_1)
-        self.entry_boxes["Entry"+str(self.row_counter)].insert(0,self.prefix_placeholder)
-        self.entry_boxes["Entry"+str(self.row_counter)].grid(row=self.row_counter,column=1,pady=3,sticky="w")
-        self.entry_boxes["Entry"+str(self.row_counter)].bind("<FocusIn>",self.clear_placeholder)
-        self.entry_boxes["Entry"+str(self.row_counter)].bind("<FocusOut>",self.add_placeholder) 
-        self.entry_boxes["Entry"+str(self.row_counter)].bind("<Return>",self.set_labellers)
-
+        self.new_labels["Label"+str(self.row_counter+1)] = tk.Label(self.frame_1,height=2)
+        self.new_labels["Label"+str(self.row_counter+1)].grid(row=self.row_counter+1,column=1,sticky="ew")
+        self.row_counter+=2
+        self.label_num+=2
+    def make_new_entry(self):
+       # self.label_num +=1
+        self.make_labels()
+        self.row_counter+=2
         self.info_boxes["infobox"+str(self.label_num)] = scrolledtext.ScrolledText(self.frame_1,wrap=tk.WORD,width=55,height=7)
-        self.info_boxes["infobox"+str(self.label_num)].grid(row=self.row_counter+1,column=1,pady=3,sticky="w")
+        self.info_boxes["infobox"+str(self.label_num)].grid(row=self.row_counter,column=1,pady=3,sticky="w")
         self.info_boxes["infobox"+str(self.label_num)].bind("<FocusOut>",self.save_text_boxes)
-        
+    def process_equation(self,event):
+        equation_text = event.widget.get("1.0",tk.END).strip()
+        final = []
+        entrance_set = equation_text.split("\n")
+        print(entrance_set)
+        co(wait=True)
+        for enters in entrance_set:
+            rendered_text=self.markdown_convert(enters)
+            result_text=self.calculate_equation(rendered_text)
+            if "=" in enters:
+                final.append(rendered_text)
+            else:
+                final.append(f"{rendered_text} = {result_text}")
+        final_output = ("\n").join(final)
+        #final_output = f"{rendered_text} = {result_text}"
+        rendered_label = event.widget.grid_info()["row"] + 1  # Row after the input box
+        for widget in self.frame_1.grid_slaves(row=rendered_label):
+            if isinstance(widget, tk.Label):
+                widget.config(text=final_output, anchor="w", justify="left")
+                break
+
+    def markdown_convert(self,text):
+        conversions = {
+            '^': 'ⁿ', '_': 'ₙ','**': '𝒃','*': '𝒊','~~': '̶','sqrt': '√','pi': 'π',
+            'theta': 'θ','alpha': 'α','beta': 'β','gamma': 'γ','delta': 'δ','lambda':'λ',
+            'mu': 'μ','omega': 'ω', 'int': '∫','sum': '∑','prod': '∏','infty': '∞','approx': '≈',
+            '!=': '≠','>=': '≥','<=': '≤','->': '→', '<-': '←','=>': '⇒','<=': '⇐','...': '…',
+            'sum_': '∑ₙ','sqrt(': '√(','int_': '∫ₙ','lim': 'lim','lim_': 'limₙ','sin': 'sin',
+            'cos': 'cos','tan': 'tan','log': 'log','ln': 'ln','exp': 'exp','frac': '⁄','cdot': '⋅',
+            'times': '×','div': '÷', 'leq': '≤','geq': '≥','neq': '≠','subset': '⊂','supset': '⊃',
+            'subseteq': '⊆', 'supseteq': '⊇','cup': '∪','cap': '∩','forall': '∀', 'exists': '∃',
+            'nabla': '∇','Alpha': 'Α','Beta': 'Β','Gamma': 'Γ','Delta': 'Δ','Epsilon': 'Ε',
+            'Zeta': 'Ζ','Eta': 'Η','Theta': 'Θ','Iota': 'Ι','Kappa': 'Κ','Lambda': 'Λ',
+            'Mu': 'Μ','Nu': 'Ν','Xi': 'Ξ','Omicron': 'Ο','Pi': 'Π','Rho': 'Ρ',
+            'Sigma': 'Σ','Tau': 'Τ','Upsilon': 'Υ','Phi': 'Φ','Chi': 'Χ','Psi': 'Ψ',
+            'Omega': 'Ω'}
+        for key, value in conversions.items():
+            text = text.replace(key, value)
+        print(text)
+        print(type(text))
+        co(wait=True)
+        return text
+
+    def calculate_equation(self,text):
+        try:
+            result = sympify(text)
+            return result
+        except SympifyError:
+            return "Invalid Equation"
     def clear_placeholder(self, event):
         if event.widget.get()== "Create A Label":
             event.widget.delete(0, tk.END)
@@ -91,7 +153,7 @@ class Application(tk.Tk):
     def save_text_boxes(self,event):
         self.infob_info[event.widget] = event.widget.get("1.0",tk.END)
    # def save_entry_boxes(self):
-        
+
  #  def new_window(self):
     def create_new_state(self):
         print(self.info_boxes)
@@ -102,11 +164,11 @@ class Application(tk.Tk):
         meta = {}
         ticket = {}
         master = {}
-        n = 0 
+        n = 0
         for i in self.info_boxes.values():
             infom["infobox"+str(n)] = str(i)
-            n+=1 
-        n=0 
+            n+=1
+        n=0
         for i in self.entry_boxes.values():
             entrym["entry"+str(n)] = str(i)
             n+=1
@@ -126,14 +188,16 @@ class Application(tk.Tk):
         )
         if new_state_name:
             master["Labels"] = infom
-            master["Entry Boxes"] = entrym 
-            master["Label Text"] = ticket 
+            master["Entry Boxes"] = entrym
+            master["Label Text"] = ticket
             master["Box Text"] = meta
             # Initialize a new state
             leak = open(new_state_name,"w")
             json.dump(master,leak,indent=1)
             self.current_file = new_state_name
-            self.reset_widgets()    
+            self.reset_widgets()
+    def reload_state(self):
+        print("nothing yet")
     def reset_widgets(self):
         for widget in self.frame_1.winfo_children():
             widget.destroy()
@@ -141,11 +205,6 @@ class Application(tk.Tk):
         self.info_boxes = {}
         self.entry_info = {}
         self.infob_info = {}
-        self.another_tbox = tk.Button(self.frame_1,text="Create Text Box",command=self.make_new_entry)
-        self.another_tbox.grid(row=1,column=0)
-
-        self.another_tbox1 = tk.Button(self.frame_1,text="Save State",command=self.create_new_state)
-        self.another_tbox1.grid(row=2,column=0)
 
 
 if __name__ == "__main__":
