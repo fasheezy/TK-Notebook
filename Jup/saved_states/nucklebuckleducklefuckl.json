@@ -1,0 +1,19 @@
+{
+ "Labels": {
+  "infobox0": ".!canvas.!frame.!frame2",
+  "infobox1": ".!canvas.!frame.!frame3",
+  "infobox2": ".!canvas.!frame.!frame4"
+ },
+ "Entry Boxes": {
+  "entry0": ".!canvas.!frame.!entry",
+  "entry1": ".!canvas.!frame.!entry2",
+  "entry2": ".!canvas.!frame.!entry3"
+ },
+ "Label Text": {
+  "labels0": "No way there are ",
+  "labels1": "chungusbiggerindsa"
+ },
+ "Box Text": {
+  "text0": "anyways that we can \nsay something \nwhat \ndo you \nwant from me \nsay something\n"
+ }
+}

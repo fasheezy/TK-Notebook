@@ -1,0 +1,25 @@
+{
+ "Labels": {
+  "infobox0": ".!canvas.!frame.!frame2",
+  "infobox1": ".!canvas.!frame.!frame3",
+  "infobox2": ".!canvas.!frame.!frame4",
+  "infobox3": ".!canvas.!frame.!frame5",
+  "infobox4": ".!canvas.!frame.!frame6"
+ },
+ "Entry Boxes": {
+  "entry0": ".!canvas.!frame.!entry",
+  "entry1": ".!canvas.!frame.!entry2",
+  "entry2": ".!canvas.!frame.!entry3",
+  "entry3": ".!canvas.!frame.!entry4",
+  "entry4": ".!canvas.!frame.!entry5"
+ },
+ "Label Text": {
+  "labels0": "200"
+ },
+ "Box Text": {
+  "text0": "wakeupinthemorning\n",
+  "text1": "\n",
+  "text2": "wakeupinthemorning\nand I'm totally sloshed \ncheck this out \ncheck what out?\nwhat do you mean?\n",
+  "text3": "lets see what I mean \n"
+ }
+}

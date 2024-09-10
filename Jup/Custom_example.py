@@ -20,6 +20,7 @@ class DirectoryColumn:
         # Root frame for the column
         self.frame = ttk.Frame(master, width=300)
         self.frame.pack(side=tk.LEFT, fill=tk.Y, padx=5, pady=10)
+        self.other_frames = {}
 
         # Title label
         self.label = ttk.Label(self.frame, text=title)
@@ -195,7 +196,6 @@ class RenameSettingsFrame(ttk.Frame):
         back_button = ttk.Button(self, text="Back", command=self.back_callback)
         back_button.pack(pady=20)
 
-7
 
     def save_prefix(self, event=None):
         """Save the prefix customization when the Return key is pressed."""
