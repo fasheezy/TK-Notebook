@@ -67,6 +67,7 @@ class iterfuncs:
         self.tagnum = 0 
         self.used_tag = self.notations[self.tagnum]
         self.loc = []
+        self.check = 0
     def clear_graph(self,event):
         if event.widget.get() == "Enter an Equation":
             event.widget.delete(0, tk.END)
@@ -123,7 +124,7 @@ class iterfuncs:
                     
                     start_pos = end_pos
             lp = event.widget.index(tk.INSERT)        
-            event.widget.tag_add(self.used_tag,f"{lp}-1c")
+            event.widget.tag_add(self.used_tag,f"{lp}-1c",f"{lp}")
     def replace_back(self,insert):
         entries = insert
         for unspecial,special in self.conversions.items():
@@ -131,14 +132,14 @@ class iterfuncs:
         return entries
 
     def delete_char(self,event):
+        
         if event.keysym in ("Left", "Right", "Up", "Down", "Home", "End", "BackSpace", "Delete","Return"):
             return None 
+        if event.keysym in ("Control_L","Control_R"):
+            self.check =1
         if event.char=="`": 
             self.tagnum = (self.tagnum+1) %len(self.notations)
             self.used_tag = self.notations[self.tagnum]
-            return "break"
-        elif self.used_tag:
-            event.widget.insert(tk.INSERT,event.char)
             return "break"
 
         return None
@@ -242,6 +243,3 @@ class plotdow:
             self.canvas.draw()
         except Exception as e:
             print(f"Error in equation: {e}")
-
-
-        
