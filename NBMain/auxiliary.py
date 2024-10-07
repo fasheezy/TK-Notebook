@@ -131,7 +131,7 @@ class iterfuncs:
         return entries
 
     def delete_char(self,event):
-        if event.keysym in ("Left", "Right", "Up", "Down", "Home", "End", "BackSpace", "Delete"):
+        if event.keysym in ("Left", "Right", "Up", "Down", "Home", "End", "BackSpace", "Delete","Return"):
             return None 
         if event.char=="`": 
             self.tagnum = (self.tagnum+1) %len(self.notations)
