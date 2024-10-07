@@ -57,7 +57,7 @@ class iterfuncs:
         '/propto': '∝', '/equiv': '≡', '/otimes': '⊗', '/oplus': '⊕',
         '/bullet': '•', '/dagger': '†', '/ddagger': '‡', '/aleph': 'ℵ',
         '/prime': '′', '/hbar': 'ℏ', '/ell': 'ℓ', '/Re': 'ℜ',
-        '/Im': 'ℑ', '/wp': '℘', '/degree': '°', '/copyright': '©',
+        '/Im': 'ℑ', '/wp': '℘', '/deg': '°', '/copyright': '©',
         '/registered': '®', '/paragraph': '¶', '/section': '§',
         '/therefore': '∴', '/because': '∵', '/angle': '∠', '/triangle': '△',
         '/lozenge': '◊', '/clubsuit': '♣', '/diamondsuit': '♦', '/heartsuit': '♥',
@@ -82,7 +82,6 @@ class iterfuncs:
             event.widget.insert(0,"Create A Label")
     def drop_image(self, event):
         file_path = event.data.strip('{}')
-        print(file_path)
         try:
             imager = Image.open(file_path)
             image = imager.resize((600,500))
@@ -123,8 +122,8 @@ class iterfuncs:
                     event.widget.insert(start_pos, replacement_word)
                     
                     start_pos = end_pos
-            lp = event.widget.index(tk.INSERT)        
-            event.widget.tag_add(self.used_tag,f"{lp}-1c",f"{lp}")
+        lp = event.widget.index(tk.INSERT)        
+        event.widget.tag_add(self.used_tag,f"{lp}-1c",f"{lp}")
     def replace_back(self,insert):
         entries = insert
         for unspecial,special in self.conversions.items():
@@ -138,10 +137,16 @@ class iterfuncs:
         if event.keysym in ("Control_L","Control_R"):
             self.check =1
         if event.char=="`": 
-            self.tagnum = (self.tagnum+1) %len(self.notations)
+            self.tagnum = 0 
             self.used_tag = self.notations[self.tagnum]
             return "break"
-
+        elif event.char=="_":
+            self.used_tag = self.notations[self.tagnum]
+            return "break"
+        elif event.char == "^":
+            self.tagnum = 2
+            self.used_tag = self.notations[self.tagnum]
+            return "break"
         return None
     def set_tags(self,item):
         mainlist = {}
