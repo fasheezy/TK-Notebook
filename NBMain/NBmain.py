@@ -72,7 +72,7 @@ class Application(TkinterDnD.Tk):
         if self.restarted==True:
             self.make_labels()
         self.row_counter+=2
-        self.info_boxes["infobox"+str(self.row_counter)] = scrolledtext.ScrolledText(self.frame_1,wrap=tk.WORD,width=55,height=7)
+        self.info_boxes["infobox"+str(self.row_counter)] = scrolledtext.ScrolledText(self.frame_1,wrap=tk.WORD,width=75,height=7)
         boxes = backend(self.info_boxes["infobox"+str(self.row_counter)],self.row_counter)
         boxes.entrymake()
     def image_placer(self):
@@ -114,9 +114,9 @@ class Application(TkinterDnD.Tk):
         self.entry_boxes["Entry"+str(self.label_num)].bind("<KeyRelease>",graphix.plot_graph)
         self.entry_boxes["Entry"+str(self.label_num)].bind("<FocusIn>", helper.clear_graph)
         self.entry_boxes["Entry"+str(self.label_num)].bind("<FocusOut>",helper.add_graph)
-        canvas.get_tk_widget().bind("<Button-4>", graphix.zoom_in)  
-        canvas.get_tk_widget().bind("<Button-5>", graphix.zoom_out)  
-        canvas.get_tk_widget().bind("<MouseWheel>", graphix.zoom) 
+        #canvas.get_tk_widget().bind("<Button-4>", graphix.zoom_in)  
+        #canvas.get_tk_widget().bind("<Button-5>", graphix.zoom_out)  
+        #canvas.get_tk_widget().bind("<MouseWheel>", graphix.zoom) 
         if self.restarted==True:
             self.entry_boxes["Entry"+str(self.label_num)].insert(0,"Enter an Equation")
         self.entry_boxes["Entry"+str(self.label_num)].grid(sticky="w",row=self.label_num,column=1)
@@ -206,10 +206,6 @@ class Application(TkinterDnD.Tk):
                 self.entry_boxes["Entry"+str(n)].insert(0,value)
                 n+=1
         self.restarted=True
-
-
-
-
     def reset_widgets(self):
         for widget in self.frame_1.winfo_children():
             widget.destroy()
