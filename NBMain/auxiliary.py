@@ -174,6 +174,29 @@ class iterfuncs:
                 mainlist[tag] = templist
                 templist = []
         return mainlist
+    def graball(self,egg):
+        content = ""
+        current_index = egg.index("1.0")
+        end_index = egg.index(tk.END)
+
+        while current_index != end_index:
+            try:
+              
+                widget = egg.window_cget(current_index, "window")
+            except tk.TclError:
+                widget = None
+            if widget:
+                fraction_frame = egg.nametowidget(widget)
+                numerator_entry = fraction_frame.winfo_children()[0]
+                denominator_entry = fraction_frame.winfo_children()[2]
+                numerator = numerator_entry.get()
+                denominator = denominator_entry.get()
+                content += f"/frac{{{numerator}}}{{{denominator}}} "
+            else:
+                content += egg.get(current_index, f"{current_index} +1c")
+
+            current_index = egg.index(f"{current_index} +1c")
+        return content
     def re_tag(self,widget,dictionary):
         widget.tag_configure("superscript", offset=8, font=("Times New Roman", 10))
         widget.tag_configure("subscript", offset=-4, font=("Times New Roman", 10))
@@ -181,6 +204,7 @@ class iterfuncs:
         for key,value in dictionary.items():
             for rows in value:
                 widget.tag_add(key, rows[0], rows[1])
+    
 class fmframe:
     def __init__(self,frame,content,position):
         self.scrolled = frame
@@ -190,7 +214,11 @@ class fmframe:
         start_index = self.content.find("/frac")
         end_index = start_index + 5
         self.scrolled.delete(f'1.0 + {start_index} chars', f'1.0 + {end_index} chars')
-        self.create_fraction()
+    def clear_matrix(self):
+        start_index = self.content.find("/mat")
+        end_index = start_index + 5
+        self.scrolled.delete(f'1.0 + {start_index} chars', f'1.0 + {end_index} chars')
+        self.create_matrix()
     def create_fraction(self):
         mainframe = tk.Frame(self.scrolled,bg='white', relief='solid')
         mainframe.pack(fill=tk.X, padx=10, pady=(5, 0))
@@ -205,8 +233,34 @@ class fmframe:
         denominator.pack(fill=tk.X,padx=10,pady=(0,5))
 
         self.scrolled.window_create(self.position, window=mainframe)
+        self.fracs.append((mainframe, numerator, denominator))
     def create_matrix(self):
-        print("")
+        input_frame = tk.Frame(self.scrolled_text)
+        input_frame.pack(pady=5, padx=10)
+        rows_entry = tk.Entry(input_frame, width=3, justify='center', bd=0, relief='flat')
+        rows_entry.pack(side=tk.LEFT, padx=2)
+        tk.Label(input_frame, text="x", font=("Times New Roman", 10))).pack(side=tk.LEFT)
+        cols_entry = tk.Entry(input_frame, width=3, justify='center', bd=0, relief='flat')
+        cols_entry.pack(side=tk.LEFT, padx=2)
+        def dimension_entered(event=None):
+            try:
+                rows = int(rows_entry.get())
+                cols = int(cols_entry.get())
+                if 1 <= rows <= 20 and 1 <= cols <= 20:
+                    input_frame.destroy()
+                    self.create_matrix_frame(rows, cols)
+                else:
+                    pass
+            except ValueError:
+                pass
+
+        # Bind the entry boxes to trigger matrix creation when dimensions are entered
+        rows_entry.bind('<Return>', dimension_entered)
+        cols_entry.bind('<Return>', dimension_entered)
+
+        # Embed the input frame into the ScrolledText widget
+        self.scrolled.window_create('end-1c', window=input_frame)
+        self.scrolled.insert('end-1c', '\n')
 class plotdow:
     def __init__(self, ax,canvas,fig):
         self.ax = ax 
