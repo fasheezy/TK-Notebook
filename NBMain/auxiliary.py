@@ -26,6 +26,7 @@ class backend:
         self.entry.grid(row=self.counter,column=1,pady=3,sticky="w")
         self.entry.bind("<KeyPress>",self.enforce.delete_char)
         self.entry.bind('<<Modified>>', self.enforce.check_for_special)
+        self.entry.bind("<KeyRelease>",self.enforce.check_funcs)
     def imageshow(self):
         self.entry.grid(row=self.counter,column=1,pady=3,sticky="w")
         self.entry.drop_target_register(DND_FILES)
@@ -65,9 +66,10 @@ class iterfuncs:
     def __init__(self):
         self.notations = ["noscript","subscript","superscript"]
         self.tagnum = 0 
+        self.newnum = 0
         self.used_tag = self.notations[self.tagnum]
+        self.new_tag = self.notations[self.newnum]
         self.loc = []
-        self.check = 0
     def clear_graph(self,event):
         if event.widget.get() == "Enter an Equation":
             event.widget.delete(0, tk.END)
@@ -122,30 +124,41 @@ class iterfuncs:
                     event.widget.insert(start_pos, replacement_word)
                     
                     start_pos = end_pos
-        lp = event.widget.index(tk.INSERT)        
-        event.widget.tag_add(self.used_tag,f"{lp}-1c",f"{lp}")
+        lp = event.widget.index(tk.INSERT) 
+        event.widget.tag_remove(self.used_tag,f"{lp}-1c",f"{lp}")
+        event.widget.tag_add(self.new_tag,f"{lp}-1c",f"{lp}")
     def replace_back(self,insert):
         entries = insert
         for unspecial,special in self.conversions.items():
             entries = entries.replace(special,unspecial)
         return entries
-
+    def check_funcs(self,event):
+        content = event.widget.get("1.0",tk.END)
+        framer = fmframe(event.widget,content,event.widget.index(tk.INSERT))
+        if "/frac" in content:
+            framer.clear_fraction()
     def delete_char(self,event):
         
         if event.keysym in ("Left", "Right", "Up", "Down", "Home", "End", "BackSpace", "Delete","Return"):
             return None 
-        if event.keysym in ("Control_L","Control_R"):
-            self.check =1
+
         if event.char=="`": 
-            self.tagnum = 0 
+            self.tagnum =self.newnum 
+            self.newnum = 0
             self.used_tag = self.notations[self.tagnum]
+            self.new_tag = self.notations[self.newnum]
             return "break"
         elif event.char=="_":
+            self.tagnum =self.newnum 
+            self.newnum = 1
             self.used_tag = self.notations[self.tagnum]
+            self.new_tag = self.notations[self.newnum]
             return "break"
         elif event.char == "^":
-            self.tagnum = 2
+            self.tagnum =self.newnum 
+            self.newnum = 2
             self.used_tag = self.notations[self.tagnum]
+            self.new_tag = self.notations[self.newnum]
             return "break"
         return None
     def set_tags(self,item):
@@ -168,7 +181,32 @@ class iterfuncs:
         for key,value in dictionary.items():
             for rows in value:
                 widget.tag_add(key, rows[0], rows[1])
+class fmframe:
+    def __init__(self,frame,content,position):
+        self.scrolled = frame
+        self.content=content
+        self.position = position
+    def clear_fraction(self):
+        start_index = self.content.find("/frac")
+        end_index = start_index + 5
+        self.scrolled.delete(f'1.0 + {start_index} chars', f'1.0 + {end_index} chars')
+        self.create_fraction()
+    def create_fraction(self):
+        mainframe = tk.Frame(self.scrolled,bg='white', relief='solid')
+        mainframe.pack(fill=tk.X, padx=10, pady=(5, 0))
 
+        numerator = tk.Entry(mainframe, justify='center', bd=0, relief='flat', font=("Times New Roman", 14))
+        numerator.pack(fill=tk.X,padx=10,pady=(5, 0))
+
+        separator = tk.Frame(mainframe, bg='black', height=1)
+        separator.pack(fill=tk.X, padx=10, pady=2)
+
+        denominator = tk.Entry(mainframe, justify='center', bd=0, relief='flat', font=("Times New Roman", 14))
+        denominator.pack(fill=tk.X,padx=10,pady=(0,5))
+
+        self.scrolled.window_create(self.position, window=mainframe)
+    def create_matrix(self):
+        print("")
 class plotdow:
     def __init__(self, ax,canvas,fig):
         self.ax = ax 

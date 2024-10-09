@@ -127,6 +127,7 @@ class Application(TkinterDnD.Tk):
         photo_list = []
         textlocs = []
         photo_num = 0
+        fracs = []
         fix = iterfuncs()
         new_state_name = filedialog.asksaveasfilename(
             initialdir=self.save_directory,
@@ -145,7 +146,7 @@ class Application(TkinterDnD.Tk):
                 shutil.move("image_dump/"+images,"image_files/"+file_name[:-5])
             except:
                 pass
-        master["Title"] = file_name[:-5]
+        master["Title"] = new_state_name.split("/")[-1][:-5]
         for widget in self.frame_1.winfo_children():
             club = widget.grid_info()
             row = club["row"]
@@ -154,6 +155,7 @@ class Application(TkinterDnD.Tk):
                 master["Entry"+color+"_"+str(row)] = widget.get()
             elif isinstance(widget, tk.Frame):
                 for child in widget.winfo_children():
+                    print(child)
                     if isinstance(child,tk.Text):   
                         tick = child.get('1.0', tk.END)
                         extratags = fix.set_tags(child)
@@ -162,7 +164,14 @@ class Application(TkinterDnD.Tk):
                         del extratags["sel"]
                         textlocs.append(extratags)
                         master["Text_"+str(row)] = textlocs
+                    elif isinstance(child,tk.Frame):
+                        for grandkid in child.winfo_children():
+                            print(grandkid)
+                            if isinstance(grandkid,tk.Entry):
+                                fracs.append(grandkid.get())
+                    fracs = []            
                     textlocs = []
+                    
             elif isinstance(widget,tk.Label):
                 master["Photo_"+str(row)] = "image_files/"+file_name[:-5]+ "/"+photo_list[photo_num]   
                 photo_num+=1
