@@ -156,8 +156,8 @@ class Application(TkinterDnD.Tk):
             elif isinstance(widget, tk.Frame):
                 for child in widget.winfo_children():
                     print(child)
-                    if isinstance(child,tk.Text):   
-                        tick = child.get('1.0', tk.END)
+                    if isinstance(child,tk.Text): 
+                        tick =  fix.graball(child)
                         extratags = fix.set_tags(child)
                         text = fix.replace_back(tick)
                         textlocs.append(text)
