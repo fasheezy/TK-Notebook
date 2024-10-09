@@ -48,12 +48,12 @@ class Application(TkinterDnD.Tk):
 
         self.button0 = tk.Button(self.button_frame,text="Reload Old Save",command=self.reload_state)
         self.button1 = tk.Button(self.button_frame,text="Create Text Boxes",command = self.make_new_entry)
-        self.button2 = tk.Button(self.button_frame,text="Create Graph",command=self.create_graphs)
+       # self.button2 = tk.Button(self.button_frame,text="Create Graph",command=self.create_graphs)
         self.button3 = tk.Button(self.button_frame,text="Create Image Box",command=self.image_placer)
         self.button4 = tk.Button(self.button_frame,text="Create New Save",command=self.create_new_state)
         self.button0.pack(pady=5,fill="x")
         self.button1.pack(pady=5,fill="x")
-        self.button2.pack(pady=5,fill="x")
+       # self.button2.pack(pady=5,fill="x")
         self.button3.pack(pady=5,fill="x")
         self.button4.pack(pady=5,fill="x")
     def on_configure(self,event):
@@ -72,7 +72,7 @@ class Application(TkinterDnD.Tk):
         if self.restarted==True:
             self.make_labels()
         self.row_counter+=2
-        self.info_boxes["infobox"+str(self.row_counter)] = scrolledtext.ScrolledText(self.frame_1,wrap=tk.WORD,width=75,height=7)
+        self.info_boxes["infobox"+str(self.row_counter)] = scrolledtext.ScrolledText(self.frame_1,wrap=tk.WORD,width=75,height=10)
         boxes = backend(self.info_boxes["infobox"+str(self.row_counter)],self.row_counter)
         boxes.entrymake()
     def image_placer(self):
@@ -85,18 +85,14 @@ class Application(TkinterDnD.Tk):
     def remove_widget(self,loc):
         extract = loc.grid_info()["row"]
         for widget in self.frame_1.grid_slaves(row=extract, column=1):
-            widget.grid_remove()  
+            widget.destroy()  
         for widget in self.frame_1.grid_slaves(row=extract+1,column=1):
-            widget.grid_remove()  
+            widget.destroy()  
             if isinstance(widget,tk.Label):
-                self.pic_boxes.pop("picbox"+str(extract+1))
                 for photo in os.listdir("image_dump"):
                     if extract+1 == int(photo.split("_")[1][0]):
                         os.remove("image_dump/"+photo)
-            elif isinstance(widget,tk.Entry):
-                self.entry_boxes.pop("Entry"+str(extract+1))
-            elif isinstance(widget,tk.Frame):
-                self.info_boxes.pop("infobox"+str(extract+1))
+
 
         self.row_counter -=2
         self.label_num -=2
@@ -182,6 +178,7 @@ class Application(TkinterDnD.Tk):
         
        
     def reload_state(self):
+        self.reset_widgets()
         function = iterfuncs()
         self.restarted= False
         self.row_counter = 0
