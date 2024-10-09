@@ -137,6 +137,8 @@ class iterfuncs:
         framer = fmframe(event.widget,content,event.widget.index(tk.INSERT))
         if "/frac" in content:
             framer.clear_fraction()
+        elif "/mat" in content:
+            framer.clear_matrix()
     def delete_char(self,event):
         
         if event.keysym in ("Left", "Right", "Up", "Down", "Home", "End", "BackSpace", "Delete","Return"):
@@ -214,53 +216,118 @@ class fmframe:
         start_index = self.content.find("/frac")
         end_index = start_index + 5
         self.scrolled.delete(f'1.0 + {start_index} chars', f'1.0 + {end_index} chars')
+        self.create_fraction()
     def clear_matrix(self):
         start_index = self.content.find("/mat")
         end_index = start_index + 5
         self.scrolled.delete(f'1.0 + {start_index} chars', f'1.0 + {end_index} chars')
         self.create_matrix()
     def create_fraction(self):
-        mainframe = tk.Frame(self.scrolled,bg='white', relief='solid')
+        mainframe = tk.Frame(self.scrolled,bg='white', bd=0,relief='solid')
         mainframe.pack(fill=tk.X, padx=10, pady=(5, 0))
 
-        numerator = tk.Entry(mainframe, justify='center', bd=0, relief='flat', font=("Times New Roman", 14))
+        numerator = tk.Entry(mainframe, justify='center',highlightthickness=0, bg="white",relief='flat', font=("Times New Roman", 14))
         numerator.pack(fill=tk.X,padx=10,pady=(5, 0))
 
-        separator = tk.Frame(mainframe, bg='black', height=1)
+        separator = tk.Frame(mainframe, bg='black',relief="flat", height=1)
         separator.pack(fill=tk.X, padx=10, pady=2)
 
-        denominator = tk.Entry(mainframe, justify='center', bd=0, relief='flat', font=("Times New Roman", 14))
+        denominator = tk.Entry(mainframe, justify='center',highlightthickness=0, relief='flat', bg="white",font=("Times New Roman", 14))
         denominator.pack(fill=tk.X,padx=10,pady=(0,5))
 
+        mainframe.bind("<<Modified>>",self.replacer)
+        denominator.bind("<<Modified>>",self.replacer)
+        numerator.bind("<<Modified>>",self.replacer)
+        denominator.focus_set()
         self.scrolled.window_create(self.position, window=mainframe)
-        self.fracs.append((mainframe, numerator, denominator))
     def create_matrix(self):
-        input_frame = tk.Frame(self.scrolled_text)
+        input_frame = tk.Frame(self.scrolled)
         input_frame.pack(pady=5, padx=10)
         rows_entry = tk.Entry(input_frame, width=3, justify='center', bd=0, relief='flat')
         rows_entry.pack(side=tk.LEFT, padx=2)
-        tk.Label(input_frame, text="x", font=("Times New Roman", 10))).pack(side=tk.LEFT)
+        #tk.Label(input_frame, text="x", font=("Times New Roman", 10)).pack(side=tk.LEFT)
         cols_entry = tk.Entry(input_frame, width=3, justify='center', bd=0, relief='flat')
         cols_entry.pack(side=tk.LEFT, padx=2)
+        rows_entry.focus_set()
         def dimension_entered(event=None):
             try:
                 rows = int(rows_entry.get())
                 cols = int(cols_entry.get())
                 if 1 <= rows <= 20 and 1 <= cols <= 20:
                     input_frame.destroy()
-                    self.create_matrix_frame(rows, cols)
+                    self.create_matrix_box(rows, cols)
                 else:
                     pass
             except ValueError:
                 pass
 
-        # Bind the entry boxes to trigger matrix creation when dimensions are entered
-        rows_entry.bind('<Return>', dimension_entered)
-        cols_entry.bind('<Return>', dimension_entered)
+        rows_entry.bind("<FocusOut>", dimension_entered)
+        cols_entry.bind("<FocusOut>", dimension_entered)
 
-        # Embed the input frame into the ScrolledText widget
         self.scrolled.window_create('end-1c', window=input_frame)
         self.scrolled.insert('end-1c', '\n')
+    def create_matrix_box(self,rows,cols):
+        frame = tk.Frame(self.scrolled, bg='white', relief='solid')
+        frame.pack(pady=5, padx=10)
+        bracket_frame_left = tk.Frame(frame)
+        bracket_frame_left.grid(row=0, column=0, rowspan=rows + 2)
+
+
+        matrix_frame = tk.Frame(frame)
+        matrix_frame.grid(row=0, column=1)
+        for r in range(rows):
+            for c in range(cols):
+                cell = tk.Entry(matrix_frame, width=5, justify='center', bd=0, relief='solid')
+                cell.grid(row=r, column=c, padx=2, pady=2)
+
+        bracket_frame_right = tk.Frame(frame)
+        bracket_frame_right.grid(row=0, column=2, rowspan=rows + 2)
+        self.scrolled.window_create('end-1c', window=frame)
+        self.scrolled.insert('end-1c', '\n')
+    def replacer(self,event):
+        conversions = {
+        '/alpha': 'α', '/beta': 'β', '/gamma': 'γ', '/delta': 'δ',
+        '/epsilon': 'ε', '/zeta': 'ζ', '/eta': 'η', '/theta': 'θ',
+        '/iota': 'ι', '/kappa': 'κ', '/lambda': 'λ', '/mu': 'μ',
+        '/nu': 'ν', '/xi': 'ξ', '/omicron': 'ο', '/pi': 'π',
+        '/rho': 'ρ', '/sigma': 'σ', '/tau': 'τ', '/upsilon': 'υ',
+        '/phi': 'φ', '/chi': 'χ', '/psi': 'ψ', '/omega': 'ω',
+        '/Alpha': 'Α', '/Beta': 'Β', '/Gamma': 'Γ', '/Delta': 'Δ',
+        '/Epsilon': 'Ε', '/Zeta': 'Ζ', '/Eta': 'Η', '/Theta': 'Θ',
+        '/Iota': 'Ι', '/Kappa': 'Κ', '/Lambda': 'Λ', '/Mu': 'Μ',
+        '/Nu': 'Ν', '/Xi': 'Ξ', '/Omicron': 'Ο', '/Pi': 'Π',
+        '/Rho': 'Ρ', '/Sigma': 'Σ', '/Tau': 'Τ', '/Upsilon': 'Υ',
+        '/Phi': 'Φ', '/Chi': 'Χ', '/Psi': 'Ψ', '/Omega': 'Ω',
+        '/infty': '∞', '/sqrt': '√', '/sum': '∑', '/prod': '∏',
+        '/int': '∫', '/partial': '∂', '/nabla': '∇', '/forall': '∀',
+        '/exists': '∃', '/neg': '¬', '/rightarrow': '→', '/leftarrow': '←',
+        '/leftrightarrow': '↔', '/uparrow': '↑', '/downarrow': '↓',
+        '/pm': '±', '/times': '×', '/div': '÷', '/neq': '≠',
+        '/approx': '≈', '/leq': '≤', '/geq': '≥', '/subset': '⊂',
+        '/supset': '⊃', '/subseteq': '⊆', '/supseteq': '⊇', '/cup': '∪',
+        '/cap': '∩', '/emptyset': '∅', '/In': '∈', '/notin': '∉',
+        '/angle': '∠', '/perp': '⊥', '/cdot': '⋅', '/star': '★',
+        '/propto': '∝', '/equiv': '≡', '/otimes': '⊗', '/oplus': '⊕',
+        '/bullet': '•', '/dagger': '†', '/ddagger': '‡', '/aleph': 'ℵ',
+        '/prime': '′', '/hbar': 'ℏ', '/ell': 'ℓ', '/Re': 'ℜ',
+        '/Im': 'ℑ', '/wp': '℘', '/deg': '°', '/copyright': '©',
+        '/registered': '®', '/paragraph': '¶', '/section': '§',
+        '/therefore': '∴', '/because': '∵', '/angle': '∠', '/triangle': '△',
+        '/lozenge': '◊', '/clubsuit': '♣', '/diamondsuit': '♦', '/heartsuit': '♥',
+        '/spadesuit': '♠', '/male': '♂', '/female': '♀'}
+        if event.widget.edit_modified():
+            event.widget.edit_modified(False)
+            for word_to_replace,replacement_word in conversions.items():
+                start_pos = '1.0'  
+                replace_lambda = lambda start_pos: (event.widget.search(word_to_replace, start_pos, stopindex=tk.END))
+                while True:
+                    start_pos = replace_lambda(start_pos)
+                    if not start_pos:
+                        break  
+                    end_pos = f"{start_pos}+{len(word_to_replace)}c"
+                    event.widget.delete(start_pos, end_pos)
+                    event.widget.insert(start_pos, replacement_word)
+                    start_pos = end_pos
 class plotdow:
     def __init__(self, ax,canvas,fig):
         self.ax = ax 
