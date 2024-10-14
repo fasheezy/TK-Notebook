@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import shutil 
-
+import time
 class Application(TkinterDnD.Tk):
     def __init__(self, *args,**kwargs):
         super().__init__(*args,**kwargs)
@@ -48,12 +48,12 @@ class Application(TkinterDnD.Tk):
 
         self.button0 = tk.Button(self.button_frame,text="Reload Old Save",command=self.reload_state)
         self.button1 = tk.Button(self.button_frame,text="Create Text Boxes",command = self.make_new_entry)
-       # self.button2 = tk.Button(self.button_frame,text="Create Graph",command=self.create_graphs)
+        self.button2 = tk.Button(self.button_frame,text="Create Graph",command=self.create_graphs)
         self.button3 = tk.Button(self.button_frame,text="Create Image Box",command=self.image_placer)
         self.button4 = tk.Button(self.button_frame,text="Create New Save",command=self.create_new_state)
         self.button0.pack(pady=5,fill="x")
         self.button1.pack(pady=5,fill="x")
-       # self.button2.pack(pady=5,fill="x")
+        self.button2.pack(pady=5,fill="x")
         self.button3.pack(pady=5,fill="x")
         self.button4.pack(pady=5,fill="x")
     def on_configure(self,event):
@@ -82,6 +82,12 @@ class Application(TkinterDnD.Tk):
         self.pic_boxes["picbox"+str(self.row_counter)] = tk.Label(self.frame_1, text="Drag and drop an image here", bg="gray", width=40, height=20)
         boxes = backend(self.pic_boxes["picbox"+str(self.row_counter)],self.row_counter)
         boxes.imageshow()
+    def reimage(self,image):
+        self.row_counter +=2 
+        placeholder = ImageTk.PhotoImage(image)
+        self.pic_boxes["picbox"+str(self.row_counter)] = tk.Label(self.frame_1, image=placeholder, bg="gray", width=placeholder.width(), height=placeholder.height())
+        func = backend(self.pic_boxes["picbox"+str(self.row_counter)],self.row_counter)
+        func.imageshow()
     def remove_widget(self,loc):
         extract = loc.grid_info()["row"]
         for widget in self.frame_1.grid_slaves(row=extract, column=1):
@@ -92,10 +98,6 @@ class Application(TkinterDnD.Tk):
                 for photo in os.listdir("image_dump"):
                     if extract+1 == int(photo.split("_")[1][0]):
                         os.remove("image_dump/"+photo)
-
-
-        self.row_counter -=2
-        self.label_num -=2
     def create_graphs(self):
         helper = iterfuncs()
         self.row_counter +=2
@@ -110,9 +112,9 @@ class Application(TkinterDnD.Tk):
         self.entry_boxes["Entry"+str(self.label_num)].bind("<KeyRelease>",graphix.plot_graph)
         self.entry_boxes["Entry"+str(self.label_num)].bind("<FocusIn>", helper.clear_graph)
         self.entry_boxes["Entry"+str(self.label_num)].bind("<FocusOut>",helper.add_graph)
-        #canvas.get_tk_widget().bind("<Button-4>", graphix.zoom_in)  
-        #canvas.get_tk_widget().bind("<Button-5>", graphix.zoom_out)  
-        #canvas.get_tk_widget().bind("<MouseWheel>", graphix.zoom) 
+        canvas.get_tk_widget().bind("<Button-4>", graphix.zoom_in)  
+        canvas.get_tk_widget().bind("<Button-5>", graphix.zoom_out)  
+        canvas.get_tk_widget().bind("<MouseWheel>", graphix.zoom) 
         if self.restarted==True:
             self.entry_boxes["Entry"+str(self.label_num)].insert(0,"Enter an Equation")
         self.entry_boxes["Entry"+str(self.label_num)].grid(sticky="w",row=self.label_num,column=1)
@@ -124,7 +126,7 @@ class Application(TkinterDnD.Tk):
         textlocs = []
         photo_num = 0
         fracs = []
-        fix = iterfuncs()
+        func = iterfuncs()
         new_state_name = filedialog.asksaveasfilename(
             initialdir=self.save_directory,
             defaultextension=".json",
@@ -151,18 +153,17 @@ class Application(TkinterDnD.Tk):
                 master["Entry"+color+"_"+str(row)] = widget.get()
             elif isinstance(widget, tk.Frame):
                 for child in widget.winfo_children():
-                    print(child)
+                    #print(child)
                     if isinstance(child,tk.Text): 
-                        tick =  fix.graball(child)
-                        extratags = fix.set_tags(child)
-                        text = fix.replace_back(tick)
+                        tick =  replace.graball(child)
+                        extratags = replace.set_tags(child)
+                        text = func.replace_back(tick)
                         textlocs.append(text)
                         del extratags["sel"]
                         textlocs.append(extratags)
                         master["Text_"+str(row)] = textlocs
                     elif isinstance(child,tk.Frame):
                         for grandkid in child.winfo_children():
-                            print(grandkid)
                             if isinstance(grandkid,tk.Entry):
                                 fracs.append(grandkid.get())
                     fracs = []            
@@ -179,7 +180,6 @@ class Application(TkinterDnD.Tk):
        
     def reload_state(self):
         self.reset_widgets()
-        function = iterfuncs()
         self.restarted= False
         self.row_counter = 0
         self.label_num = -1
@@ -198,19 +198,21 @@ class Application(TkinterDnD.Tk):
             elif "Text" in key:
                 self.make_new_entry()
                 self.info_boxes["infobox"+str(n)].insert('1.0',value[0])
-                function.re_tag(self.info_boxes["infobox"+str(n)],value[1])
+                replace.re_tag(self.info_boxes["infobox"+str(n)],value[1])
             elif "Photo" in key:
                 shutil.copy(value,"image_dump")
-                self.image_placer()
-                imager = Image.open(value)
-                image = imager.resize((600,500))
-                self.image_tk = ImageTk.PhotoImage(image)
-                self.pic_boxes["picbox"+str(n)].config(image=self.image_tk, text='')
-                self.pic_boxes["picbox"+str(n)].config(width=self.image_tk.width(), height=self.image_tk.height())
+                try:
+                    imager = Image.open(value)
+                    image = imager.resize((600,500))
+                    self.reimage(image)
+                    
+                except Exception as e:
+                    print(f"Error opening image: {e}")
             elif "Entrygray2" in key:
                 self.create_graphs()
                 self.entry_boxes["Entry"+str(n)].insert(0,value)
                 n+=1
+        
         self.restarted=True
     def reset_widgets(self):
         for widget in self.frame_1.winfo_children():
