@@ -27,6 +27,8 @@ class backend:
         self.entry.bind("<KeyPress>",self.enforce.delete_char)
         self.entry.bind('<<Modified>>', self.enforce.check_for_special)
         self.entry.bind("<KeyRelease>",self.enforce.check_funcs)
+        self.entry.bind("<Left>",self.enforce.refocus_left)
+        self.entry.bind("<Right>",self.enforce.refocus_right)
     def imageshow(self):
         self.entry.grid(row=self.counter,column=1,pady=3,sticky="w")
         self.entry.drop_target_register(DND_FILES)
@@ -47,7 +49,7 @@ class iterfuncs:
         '/Rho': 'Ρ', '/Sigma': 'Σ', '/Tau': 'Τ', '/Upsilon': 'Υ',
         '/Phi': 'Φ', '/Chi': 'Χ', '/Psi': 'Ψ', '/Omega': 'Ω',
         '/infty': '∞', '/sqrt': '√', '/sum': '∑', '/prod': '∏',
-        '/int': '∫', '/partial': '∂', '/nabla': '∇', '/forall': '∀',
+        '/int': '∫', '/partial': '∂', "/domain":'ℝ','/nabla': '∇', '/forall': '∀',
         '/exists': '∃', '/neg': '¬', '/rightarrow': '→', '/leftarrow': '←',
         '/leftrightarrow': '↔', '/uparrow': '↑', '/downarrow': '↓',
         '/pm': '±', '/times': '×', '/div': '÷', '/neq': '≠',
@@ -88,6 +90,7 @@ class iterfuncs:
             imager = Image.open(file_path)
             image = imager.resize((600,500))
             self.image_tk = ImageTk.PhotoImage(image)
+            print(self.image_tk)
             event.widget.config(image=self.image_tk, text='')
             event.widget.config(width=self.image_tk.width(), height=self.image_tk.height())
         except Exception as e:
@@ -140,10 +143,8 @@ class iterfuncs:
         elif "/mat" in content:
             framer.clear_matrix()
     def delete_char(self,event):
-        
         if event.keysym in ("Left", "Right", "Up", "Down", "Home", "End", "BackSpace", "Delete","Return"):
             return None 
-
         if event.char=="`": 
             self.tagnum =self.newnum 
             self.newnum = 0
@@ -176,51 +177,125 @@ class iterfuncs:
                 mainlist[tag] = templist
                 templist = []
         return mainlist
-    def graball(self,egg):
-        content = ""
-        current_index = egg.index("1.0")
-        end_index = egg.index(tk.END)
-
-        while current_index != end_index:
-            try:
-              
-                widget = egg.window_cget(current_index, "window")
-            except tk.TclError:
-                widget = None
-            if widget:
-                fraction_frame = egg.nametowidget(widget)
-                numerator_entry = fraction_frame.winfo_children()[0]
-                denominator_entry = fraction_frame.winfo_children()[2]
-                numerator = numerator_entry.get()
-                denominator = denominator_entry.get()
-                content += f"/frac{{{numerator}}}{{{denominator}}} "
+    def refocus_left(self,event):
+        try:
+            widgets = event.widget.window_cget(f"{event.widget.index(tk.INSERT)}-1c","window")
+        except tk.TclError:
+            widgets = None
+        if widgets:
+            embed_frame = event.widget.nametowidget(widgets)
+            if isinstance(embed_frame.winfo_children()[0],tk.Entry):
+                numerator = embed_frame.winfo_children()[0]
+                numerator.focus_set()
             else:
-                content += egg.get(current_index, f"{current_index} +1c")
+                for box in embed_frame.winfo_children():
+                    if len(box.winfo_children())>=1:
+                        if isinstance(box.winfo_children()[0],tk.Entry):
+                            box.winfo_children()[0].focus_set()
+                            break
+    def refocus_right(self,event):
+        try:
+            widgets = event.widget.window_cget(event.widget.index(tk.INSERT),"window")
+        except tk.TclError:
+            widgets = None
+        if widgets:
+            embed_frame = event.widget.nametowidget(widgets)
+            if isinstance(embed_frame.winfo_children()[0],tk.Entry):
+                numerator = embed_frame.winfo_children()[0]
+                numerator.focus_set()
+            else:
+                for box in embed_frame.winfo_children():
+                    if len(box.winfo_children())>=1:
+                        if isinstance(box.winfo_children()[0],tk.Entry):
+                            box.winfo_children()[1].focus_set()
+                            break
 
-            current_index = egg.index(f"{current_index} +1c")
-        return content
-    def re_tag(self,widget,dictionary):
+
+
+class replace:
+    def re_tag(widget,dictionary):
         widget.tag_configure("superscript", offset=8, font=("Times New Roman", 10))
         widget.tag_configure("subscript", offset=-4, font=("Times New Roman", 10))
         widget.tag_configure("noscript",offset=0,font=("Times New Roman", 13))
         for key,value in dictionary.items():
             for rows in value:
                 widget.tag_add(key, rows[0], rows[1])
+    def graball(egg):
+        content = ""
+        current_index = egg.index("1.0")
+        end_index = egg.index(tk.END)
+        matridex1 = []
+        while current_index != end_index:
+            try:
+                widget = egg.window_cget(current_index, "window")
+            except tk.TclError:
+                widget = None
+            if widget:
+                fraction_frame = egg.nametowidget(widget)
+                try:
+                    numerator_entry = fraction_frame.winfo_children()[0]
+                    denominator_entry = fraction_frame.winfo_children()[2]
+                    numerator = numerator_entry.get()
+                    denominator = denominator_entry.get()
+                    content += f"/frac{{{numerator}}}{{{denominator}}} "
+                except:
+                    pass
+                try:
+                    for something in fraction_frame.winfo_children():
+                        if len(something.winfo_children()) >=1: 
+                            for inform in something.winfo_children():
+                                if isinstance(inform,tk.Entry):
+                                    matridex1.append(inform.get())
+                    cleanmat = np.array(matridex1)
+                    cleanlist = cleanmat.reshape(round(fraction_frame.winfo_height()/21),round(fraction_frame.winfo_width()/38))
+                    content += str(cleanlist.tolist())
+                    matridex1 = []
+                except:
+                    pass
+            else:
+                content += str(egg.get(current_index, f"{current_index} +1c"))
+
+            current_index = egg.index(f"{current_index} +1c")
+        return content
+    def set_tags(item):
+        mainlist = {}
+        templist = []
+        all_tags = item.tag_names()
+        if all_tags:
+            for tag in all_tags:
+                ranges = item.tag_ranges(tag)
+                if ranges:
+                    for i in range(0,len(ranges),2):
+                        templist.append([f'{ranges[i]}',f'{ranges[i+1]}'])
+                mainlist[tag] = templist
+                templist = []
+        return mainlist
     
 class fmframe:
     def __init__(self,frame,content,position):
         self.scrolled = frame
         self.content=content
         self.position = position
+        self.tuplelist = []
     def clear_fraction(self):
-        start_index = self.content.find("/frac")
-        end_index = start_index + 5
-        self.scrolled.delete(f'1.0 + {start_index} chars', f'1.0 + {end_index} chars')
+        start_pos = '1.0'  
+        replace_lambda = lambda start_pos: (self.scrolled.search("/frac", start_pos, stopindex=tk.END))
+        while True:
+            start_pos = replace_lambda(start_pos)
+            if not start_pos:
+                break  
+            end_pos = f"{start_pos}+{len("/frac")}c"
+            self.scrolled.delete(start_pos, end_pos)
         self.create_fraction()
     def clear_matrix(self):
-        start_index = self.content.find("/mat")
-        end_index = start_index + 5
-        self.scrolled.delete(f'1.0 + {start_index} chars', f'1.0 + {end_index} chars')
+        start_pos = '1.0'  
+        replace_lambda = lambda start_pos: (self.scrolled.search("/mat", start_pos, stopindex=tk.END))
+        while True:
+            start_pos = replace_lambda(start_pos)
+            if not start_pos:
+                break  
+            end_pos = f"{start_pos}+{len("/mat")}c"
+            self.scrolled.delete(start_pos, end_pos)
         self.create_matrix()
     def create_fraction(self):
         mainframe = tk.Frame(self.scrolled,bg='white', bd=0,relief='solid')
@@ -238,15 +313,20 @@ class fmframe:
         mainframe.bind("<<Modified>>",self.replacer)
         denominator.bind("<<Modified>>",self.replacer)
         numerator.bind("<<Modified>>",self.replacer)
-        denominator.focus_set()
+        numerator.bind("<Left>",self.check_focus)
+        denominator.bind("<Left>",self.check_focus)
+        numerator.bind("<Right>",self.check_focus)
+        denominator.bind("<Right>",self.check_focus)
+        numerator.bind("<Down>",lambda event, i = denominator:self.moveup(i))
+        denominator.bind("<Up>",lambda event, i = numerator:self.moveup(i))
+        numerator.focus_set()
         self.scrolled.window_create(self.position, window=mainframe)
     def create_matrix(self):
         input_frame = tk.Frame(self.scrolled)
         input_frame.pack(pady=5, padx=10)
-        rows_entry = tk.Entry(input_frame, width=3, justify='center', bd=0, relief='flat')
+        rows_entry = tk.Entry(input_frame, width=3, justify='center', bd=0, relief='solid')
         rows_entry.pack(side=tk.LEFT, padx=2)
-        #tk.Label(input_frame, text="x", font=("Times New Roman", 10)).pack(side=tk.LEFT)
-        cols_entry = tk.Entry(input_frame, width=3, justify='center', bd=0, relief='flat')
+        cols_entry = tk.Entry(input_frame, width=3, justify='center', bd=0, relief='solid')
         cols_entry.pack(side=tk.LEFT, padx=2)
         rows_entry.focus_set()
         def dimension_entered(event=None):
@@ -263,28 +343,67 @@ class fmframe:
 
         rows_entry.bind("<FocusOut>", dimension_entered)
         cols_entry.bind("<FocusOut>", dimension_entered)
+        rows_entry.bind("<Right>",lambda event, i = cols_entry:self.moveup(i))
+        cols_entry.bind("<Right>",self.check_focus)
 
-        self.scrolled.window_create('end-1c', window=input_frame)
-        self.scrolled.insert('end-1c', '\n')
+        self.scrolled.window_create(self.position, window=input_frame)
     def create_matrix_box(self,rows,cols):
+        cells = []
         frame = tk.Frame(self.scrolled, bg='white', relief='solid')
         frame.pack(pady=5, padx=10)
-        bracket_frame_left = tk.Frame(frame)
-        bracket_frame_left.grid(row=0, column=0, rowspan=rows + 2)
-
-
-        matrix_frame = tk.Frame(frame)
+       # bracket_frame_left = tk.Frame(frame)
+        #bracket_frame_left.grid(row=0, column=0, rowspan=rows + 2)
+        matrix_frame = tk.Frame(frame,bg="white")
         matrix_frame.grid(row=0, column=1)
         for r in range(rows):
+            rowes = []
             for c in range(cols):
-                cell = tk.Entry(matrix_frame, width=5, justify='center', bd=0, relief='solid')
+                cell = tk.Entry(matrix_frame, width=5, justify='center', bd=1, relief='solid')
                 cell.grid(row=r, column=c, padx=2, pady=2)
+                rowes.append(cell)
+            cells.append(rowes)
+        def navigate(event, row, col):
+            if event.keysym == "Up":
+                new_row = (row - 1) 
+                if new_row == -1:
+                    self.scrolled.focus_set()
+                else:
+                    cells[new_row][col].focus_set()
+            elif event.keysym == "Down":
+                new_row = (row + 1) 
+                try:
+                    cells[new_row][col].focus_set()
+                except:
+                    self.scrolled.focus_set()    
+            elif event.keysym == "Left":
+                new_col = (col - 1) 
+                if new_col == -1:
+                    self.scrolled.focus_set()
+                else:
+                    cells[row][new_col].focus_set()
+            elif event.keysym == "Right":
+                new_col = (col + 1) 
+                try:
+                    cells[row][new_col].focus_set()
+                except:
+                    self.scrolled.focus_set()
 
-        bracket_frame_right = tk.Frame(frame)
-        bracket_frame_right.grid(row=0, column=2, rowspan=rows + 2)
-        self.scrolled.window_create('end-1c', window=frame)
-        self.scrolled.insert('end-1c', '\n')
-    def replacer(self,event):
+        for i in range(rows):
+            for j in range(cols):
+                cells[i][j].bind("<Key>", lambda e, row=i, col=j: navigate(e, row, col))
+        self.scrolled.window_create(self.position, window=frame)
+    def check_focus(self,event):
+        if event.widget.index(tk.INSERT) == event.widget.index(tk.END) or event.widget.index(tk.INSERT) =="1.0":
+            self.scrolled.focus_set()
+    def moveup(self,otherframe):
+        try:
+            otherframe.focus_set()
+        except: 
+            self.scrolled.focus_set()
+    
+        
+
+    def replacer(self,event=None):
         conversions = {
         '/alpha': 'α', '/beta': 'β', '/gamma': 'γ', '/delta': 'δ',
         '/epsilon': 'ε', '/zeta': 'ζ', '/eta': 'η', '/theta': 'θ',
@@ -306,7 +425,7 @@ class fmframe:
         '/approx': '≈', '/leq': '≤', '/geq': '≥', '/subset': '⊂',
         '/supset': '⊃', '/subseteq': '⊆', '/supseteq': '⊇', '/cup': '∪',
         '/cap': '∩', '/emptyset': '∅', '/In': '∈', '/notin': '∉',
-        '/angle': '∠', '/perp': '⊥', '/cdot': '⋅', '/star': '★',
+         '/perp': '⊥', '/cdot': '⋅', '/star': '★',
         '/propto': '∝', '/equiv': '≡', '/otimes': '⊗', '/oplus': '⊕',
         '/bullet': '•', '/dagger': '†', '/ddagger': '‡', '/aleph': 'ℵ',
         '/prime': '′', '/hbar': 'ℏ', '/ell': 'ℓ', '/Re': 'ℜ',
@@ -327,7 +446,9 @@ class fmframe:
                     end_pos = f"{start_pos}+{len(word_to_replace)}c"
                     event.widget.delete(start_pos, end_pos)
                     event.widget.insert(start_pos, replacement_word)
+                    
                     start_pos = end_pos
+    
 class plotdow:
     def __init__(self, ax,canvas,fig):
         self.ax = ax 
