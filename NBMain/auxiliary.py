@@ -29,6 +29,8 @@ class backend:
         self.entry.bind("<KeyRelease>",self.enforce.check_funcs)
         self.entry.bind("<Left>",self.enforce.refocus_left)
         self.entry.bind("<Right>",self.enforce.refocus_right)
+        self.entry.bind('<Control-c>', self.enforce.copy_with_tags)
+        self.entry.bind('<Control-v>', self.enforce.paste_with_tags)
     def imageshow(self):
         self.entry.grid(row=self.counter,column=1,pady=3,sticky="w")
         self.entry.drop_target_register(DND_FILES)
@@ -64,7 +66,9 @@ class iterfuncs:
         '/registered': '®', '/paragraph': '¶', '/section': '§',
         '/therefore': '∴', '/because': '∵', '/angle': '∠', '/triangle': '△',
         '/lozenge': '◊', '/clubsuit': '♣', '/diamondsuit': '♦', '/heartsuit': '♥',
-        '/spadesuit': '♠', '/male': '♂', '/female': '♀'}
+        '/spadesuit': '♠', '/male': '♂', '/female': '♀',
+        '/Rightarrow': '⇒', '/Leftarrow': '⇐', '/Leftrightarrow': '⇔',
+        '/Uparrow': '⇑', '/Downarrow': '⇓'}
     def __init__(self):
         self.notations = ["noscript","subscript","superscript"]
         self.tagnum = 0 
@@ -72,6 +76,7 @@ class iterfuncs:
         self.used_tag = self.notations[self.tagnum]
         self.new_tag = self.notations[self.newnum]
         self.loc = []
+        self.len = 0 
     def clear_graph(self,event):
         if event.widget.get() == "Enter an Equation":
             event.widget.delete(0, tk.END)
@@ -109,7 +114,15 @@ class iterfuncs:
             self.focus_set()
             event.widget.insert(0,self.new_stuff)
             self.entry_info[event.widget] = self.new_stuff
-    def check_for_special(self,event=None):
+    def check_for_special(self,event):
+        seeiftrue=False
+        current_content = event.widget.get("1.0", tk.END)  # Get all content from the text widget
+        current_length = len(current_content.strip())
+        if current_length < self.len:
+            self.len=current_length
+            seeiftrue=True
+
+    # Update the stored content length
         event.widget.tag_configure("superscript", offset=8, font=("Times New Roman", 10))
         event.widget.tag_configure("subscript", offset=-4, font=("Times New Roman", 10))
         event.widget.tag_configure("noscript",offset=0,font=("Times New Roman", 13))
@@ -121,15 +134,17 @@ class iterfuncs:
                 while True:
                     start_pos = replace_lambda(start_pos)
                     if not start_pos:
+                        seeiftrue = True
                         break  
                     end_pos = f"{start_pos}+{len(word_to_replace)}c"
                     event.widget.delete(start_pos, end_pos)
                     event.widget.insert(start_pos, replacement_word)
                     
+                    
                     start_pos = end_pos
         lp = event.widget.index(tk.INSERT) 
-        event.widget.tag_remove(self.used_tag,f"{lp}-1c",f"{lp}")
-        event.widget.tag_add(self.new_tag,f"{lp}-1c",f"{lp}")
+        event.widget.tag_remove(self.used_tag,aroundtwice(lp),lp)
+        event.widget.tag_add(self.new_tag,aroundtwice(lp),lp)
     def replace_back(self,insert):
         entries = insert
         for unspecial,special in self.conversions.items():
@@ -142,6 +157,7 @@ class iterfuncs:
             framer.clear_fraction()
         elif "/mat" in content:
             framer.clear_matrix()
+
     def delete_char(self,event):
         if event.keysym in ("Left", "Right", "Up", "Down", "Home", "End", "BackSpace", "Delete","Return"):
             return None 
@@ -209,67 +225,39 @@ class iterfuncs:
                         if isinstance(box.winfo_children()[0],tk.Entry):
                             box.winfo_children()[1].focus_set()
                             break
+    def copy_with_tags(self, event=None):
+        # Get the selected text
+        self.copy_dict = {}
+        if event.widget.tag_ranges(tk.SEL):
+            start, end = event.widget.index(tk.SEL_FIRST), event.widget.index(tk.SEL_LAST)
+            self.copied_text = event.widget.get(start, end)
+            needlist = list(self.copied_text)
+            self.copied_tags = []
+            # Store tags associated with the text
+            self.copied_tags = []
+            current_index = start
+            n = 0
+            print(event.widget.tag_names())
+            for i in range(len(needlist)):
+                char_tags = event.widget.tag_names(current_index)[i]
+                self.copied_tags.append(char_tags)
+            print(self.copied_tags)
+
+    def paste_with_tags(self, event=None):
+        loopspot = event.widget.index(tk.INSERT) 
+        initspot =  event.widget.index(tk.INSERT) 
+        try:
+            event.widget.insert(loopspot ,self.copied_text)
+            for taggs in self.copied_tags:
+                event.widget.tag_add(taggs,loopspot)
+               # loopspot = aroundtwice(initspot)
+            return "break"
+        except tk.TclError:
+            pass
 
 
 
-class replace:
-    def re_tag(widget,dictionary):
-        widget.tag_configure("superscript", offset=8, font=("Times New Roman", 10))
-        widget.tag_configure("subscript", offset=-4, font=("Times New Roman", 10))
-        widget.tag_configure("noscript",offset=0,font=("Times New Roman", 13))
-        for key,value in dictionary.items():
-            for rows in value:
-                widget.tag_add(key, rows[0], rows[1])
-    def graball(egg):
-        content = ""
-        current_index = egg.index("1.0")
-        end_index = egg.index(tk.END)
-        matridex1 = []
-        while current_index != end_index:
-            try:
-                widget = egg.window_cget(current_index, "window")
-            except tk.TclError:
-                widget = None
-            if widget:
-                fraction_frame = egg.nametowidget(widget)
-                try:
-                    numerator_entry = fraction_frame.winfo_children()[0]
-                    denominator_entry = fraction_frame.winfo_children()[2]
-                    numerator = numerator_entry.get()
-                    denominator = denominator_entry.get()
-                    content += f"/frac{{{numerator}}}{{{denominator}}} "
-                except:
-                    pass
-                try:
-                    for something in fraction_frame.winfo_children():
-                        if len(something.winfo_children()) >=1: 
-                            for inform in something.winfo_children():
-                                if isinstance(inform,tk.Entry):
-                                    matridex1.append(inform.get())
-                    cleanmat = np.array(matridex1)
-                    cleanlist = cleanmat.reshape(round(fraction_frame.winfo_height()/21),round(fraction_frame.winfo_width()/38))
-                    content += str(cleanlist.tolist())
-                    matridex1 = []
-                except:
-                    pass
-            else:
-                content += str(egg.get(current_index, f"{current_index} +1c"))
 
-            current_index = egg.index(f"{current_index} +1c")
-        return content
-    def set_tags(item):
-        mainlist = {}
-        templist = []
-        all_tags = item.tag_names()
-        if all_tags:
-            for tag in all_tags:
-                ranges = item.tag_ranges(tag)
-                if ranges:
-                    for i in range(0,len(ranges),2):
-                        templist.append([f'{ranges[i]}',f'{ranges[i+1]}'])
-                mainlist[tag] = templist
-                templist = []
-        return mainlist
     
 class fmframe:
     def __init__(self,frame,content,position):
@@ -310,9 +298,9 @@ class fmframe:
         denominator = tk.Entry(mainframe, justify='center',highlightthickness=0, relief='flat', bg="white",font=("Times New Roman", 14))
         denominator.pack(fill=tk.X,padx=10,pady=(0,5))
 
-        mainframe.bind("<<Modified>>",self.replacer)
-        denominator.bind("<<Modified>>",self.replacer)
-        numerator.bind("<<Modified>>",self.replacer)
+        mainframe.bind("<KeyRelease>",self.replacer)
+        denominator.bind("<KeyRelease>",self.replacer)
+        numerator.bind("<KeyRelease>",self.replacer)
         numerator.bind("<Left>",self.check_focus)
         denominator.bind("<Left>",self.check_focus)
         numerator.bind("<Right>",self.check_focus)
@@ -343,10 +331,12 @@ class fmframe:
 
         rows_entry.bind("<FocusOut>", dimension_entered)
         cols_entry.bind("<FocusOut>", dimension_entered)
-        rows_entry.bind("<Right>",lambda event, i = cols_entry:self.moveup(i))
-        cols_entry.bind("<Right>",self.check_focus)
+        rows_entry.bind("<Key>",lambda event, i = cols_entry:self.moveup(i))
+        #rows_entry.bind("KeyRelease",)
+        cols_entry.bind("<Key>",self.check_focus)
 
         self.scrolled.window_create(self.position, window=input_frame)
+
     def create_matrix_box(self,rows,cols):
         cells = []
         frame = tk.Frame(self.scrolled, bg='white', relief='solid')
@@ -387,10 +377,12 @@ class fmframe:
                     cells[row][new_col].focus_set()
                 except:
                     self.scrolled.focus_set()
-
         for i in range(rows):
             for j in range(cols):
                 cells[i][j].bind("<Key>", lambda e, row=i, col=j: navigate(e, row, col))
+                cells[i][j].bind("<KeyRelease>",self.replacer)
+        cells[0][0].focus_set()
+
         self.scrolled.window_create(self.position, window=frame)
     def check_focus(self,event):
         if event.widget.index(tk.INSERT) == event.widget.index(tk.END) or event.widget.index(tk.INSERT) =="1.0":
@@ -400,54 +392,45 @@ class fmframe:
             otherframe.focus_set()
         except: 
             self.scrolled.focus_set()
-    
-        
-
     def replacer(self,event=None):
         conversions = {
-        '/alpha': 'α', '/beta': 'β', '/gamma': 'γ', '/delta': 'δ',
-        '/epsilon': 'ε', '/zeta': 'ζ', '/eta': 'η', '/theta': 'θ',
-        '/iota': 'ι', '/kappa': 'κ', '/lambda': 'λ', '/mu': 'μ',
-        '/nu': 'ν', '/xi': 'ξ', '/omicron': 'ο', '/pi': 'π',
-        '/rho': 'ρ', '/sigma': 'σ', '/tau': 'τ', '/upsilon': 'υ',
-        '/phi': 'φ', '/chi': 'χ', '/psi': 'ψ', '/omega': 'ω',
-        '/Alpha': 'Α', '/Beta': 'Β', '/Gamma': 'Γ', '/Delta': 'Δ',
-        '/Epsilon': 'Ε', '/Zeta': 'Ζ', '/Eta': 'Η', '/Theta': 'Θ',
-        '/Iota': 'Ι', '/Kappa': 'Κ', '/Lambda': 'Λ', '/Mu': 'Μ',
-        '/Nu': 'Ν', '/Xi': 'Ξ', '/Omicron': 'Ο', '/Pi': 'Π',
-        '/Rho': 'Ρ', '/Sigma': 'Σ', '/Tau': 'Τ', '/Upsilon': 'Υ',
-        '/Phi': 'Φ', '/Chi': 'Χ', '/Psi': 'Ψ', '/Omega': 'Ω',
-        '/infty': '∞', '/sqrt': '√', '/sum': '∑', '/prod': '∏',
-        '/int': '∫', '/partial': '∂', '/nabla': '∇', '/forall': '∀',
-        '/exists': '∃', '/neg': '¬', '/rightarrow': '→', '/leftarrow': '←',
-        '/leftrightarrow': '↔', '/uparrow': '↑', '/downarrow': '↓',
-        '/pm': '±', '/times': '×', '/div': '÷', '/neq': '≠',
-        '/approx': '≈', '/leq': '≤', '/geq': '≥', '/subset': '⊂',
-        '/supset': '⊃', '/subseteq': '⊆', '/supseteq': '⊇', '/cup': '∪',
-        '/cap': '∩', '/emptyset': '∅', '/In': '∈', '/notin': '∉',
-         '/perp': '⊥', '/cdot': '⋅', '/star': '★',
-        '/propto': '∝', '/equiv': '≡', '/otimes': '⊗', '/oplus': '⊕',
-        '/bullet': '•', '/dagger': '†', '/ddagger': '‡', '/aleph': 'ℵ',
-        '/prime': '′', '/hbar': 'ℏ', '/ell': 'ℓ', '/Re': 'ℜ',
-        '/Im': 'ℑ', '/wp': '℘', '/deg': '°', '/copyright': '©',
-        '/registered': '®', '/paragraph': '¶', '/section': '§',
-        '/therefore': '∴', '/because': '∵', '/angle': '∠', '/triangle': '△',
-        '/lozenge': '◊', '/clubsuit': '♣', '/diamondsuit': '♦', '/heartsuit': '♥',
-        '/spadesuit': '♠', '/male': '♂', '/female': '♀'}
-        if event.widget.edit_modified():
-            event.widget.edit_modified(False)
-            for word_to_replace,replacement_word in conversions.items():
-                start_pos = '1.0'  
-                replace_lambda = lambda start_pos: (event.widget.search(word_to_replace, start_pos, stopindex=tk.END))
-                while True:
-                    start_pos = replace_lambda(start_pos)
-                    if not start_pos:
-                        break  
-                    end_pos = f"{start_pos}+{len(word_to_replace)}c"
-                    event.widget.delete(start_pos, end_pos)
-                    event.widget.insert(start_pos, replacement_word)
-                    
-                    start_pos = end_pos
+            '/alpha': 'α', '/beta': 'β', '/gamma': 'γ', '/delta': 'δ',
+            '/epsilon': 'ε', '/zeta': 'ζ', '/eta': 'η', '/theta': 'θ',
+            '/iota': 'ι', '/kappa': 'κ', '/lambda': 'λ', '/mu': 'μ',
+            '/nu': 'ν', '/xi': 'ξ', '/omicron': 'ο', '/pi': 'π',
+            '/rho': 'ρ', '/sigma': 'σ', '/tau': 'τ', '/upsilon': 'υ',
+            '/phi': 'φ', '/chi': 'χ', '/psi': 'ψ', '/omega': 'ω',
+            '/Alpha': 'Α', '/Beta': 'Β', '/Gamma': 'Γ', '/Delta': 'Δ',
+            '/Epsilon': 'Ε', '/Zeta': 'Ζ', '/Eta': 'Η', '/Theta': 'Θ',
+            '/Iota': 'Ι', '/Kappa': 'Κ', '/Lambda': 'Λ', '/Mu': 'Μ',
+            '/Nu': 'Ν', '/Xi': 'Ξ', '/Omicron': 'Ο', '/Pi': 'Π',
+            '/Rho': 'Ρ', '/Sigma': 'Σ', '/Tau': 'Τ', '/Upsilon': 'Υ',
+            '/Phi': 'Φ', '/Chi': 'Χ', '/Psi': 'Ψ', '/Omega': 'Ω',
+            '/infty': '∞', '/sqrt': '√', '/sum': '∑', '/prod': '∏',
+            '/int': '∫', '/partial': '∂', "/domain":'ℝ','/nabla': '∇', '/forall': '∀',
+            '/exists': '∃', '/neg': '¬', '/rightarrow': '→', '/leftarrow': '←',
+            '/leftrightarrow': '↔', '/uparrow': '↑', '/downarrow': '↓',
+            '/pm': '±', '/times': '×', '/div': '÷', '/neq': '≠',
+            '/approx': '≈', '/leq': '≤', '/geq': '≥', '/subset': '⊂',
+            '/supset': '⊃', '/subseteq': '⊆', '/supseteq': '⊇', '/cup': '∪',
+            '/cap': '∩', '/emptyset': '∅', '/In': '∈', '/notin': '∉',
+            '/angle': '∠', '/perp': '⊥', '/cdot': '⋅', '/star': '★',
+            '/propto': '∝', '/equiv': '≡', '/otimes': '⊗', '/oplus': '⊕',
+            '/bullet': '•', '/dagger': '†', '/ddagger': '‡', '/aleph': 'ℵ',
+            '/prime': '′', '/hbar': 'ℏ', '/ell': 'ℓ', '/Re': 'ℜ',
+            '/Im': 'ℑ', '/wp': '℘', '/deg': '°', '/copyright': '©',
+            '/registered': '®', '/paragraph': '¶', '/section': '§',
+            '/therefore': '∴', '/because': '∵', '/angle': '∠', '/triangle': '△',
+            '/lozenge': '◊', '/clubsuit': '♣', '/diamondsuit': '♦', '/heartsuit': '♥',
+            '/spadesuit': '♠', '/male': '♂', '/female': '♀',
+            '/Rightarrow': '⇒', '/Leftarrow': '⇐', '/Leftrightarrow': '⇔',
+            '/Uparrow': '⇑', '/Downarrow': '⇓'}
+        curtext = event.widget.get()
+        for word_to_replace,replacement_word in conversions.items():
+            curtext = curtext.replace( word_to_replace,replacement_word)
+        event.widget.delete(0, tk.END)  # Clear the entry widget
+        event.widget.insert(0, curtext) 
+        
     
 class plotdow:
     def __init__(self, ax,canvas,fig):

@@ -5,11 +5,14 @@ from tkinter import filedialog,messagebox,font, Tk,ttk,scrolledtext
 #from sympy import sympify,SympifyError
 from tkinterdnd2 import TkinterDnD, DND_FILES
 from auxiliary import * 
+from stmanage import *
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import shutil 
 import time
+import re
+import ast
 class Application(TkinterDnD.Tk):
     def __init__(self, *args,**kwargs):
         super().__init__(*args,**kwargs)
@@ -60,7 +63,7 @@ class Application(TkinterDnD.Tk):
         self.main_canvas.configure(scrollregion=self.main_canvas.bbox("all"))
     def make_labels(self):
         self.label_num+=2
-        self.entry_boxes["Entry"+str(self.label_num)] = tk.Entry(self.frame_1,fg='gray1')
+        self.entry_boxes["Entry"+str(self.label_num)] = tk.Entry(self.frame_1,fg='gray1',font=("Times New Roman", 12))
         if self.restarted==True:
             self.entry_boxes["Entry"+str(self.label_num)].insert(0,"Create A Label")
         backdoor = backend(self.entry_boxes["Entry"+str(self.label_num)],self.label_num)
@@ -88,6 +91,8 @@ class Application(TkinterDnD.Tk):
         self.pic_boxes["picbox"+str(self.row_counter)] = tk.Label(self.frame_1, image=placeholder, bg="gray", width=placeholder.width(), height=placeholder.height())
         func = backend(self.pic_boxes["picbox"+str(self.row_counter)],self.row_counter)
         func.imageshow()
+        self.pic_boxes["picbox"+str(self.row_counter)].config(image=placeholder, text='')
+        self.pic_boxes["picbox"+str(self.row_counter)].config(width=placeholder.width(), height=placeholder.height())
     def remove_widget(self,loc):
         extract = loc.grid_info()["row"]
         for widget in self.frame_1.grid_slaves(row=extract, column=1):
@@ -194,18 +199,33 @@ class Application(TkinterDnD.Tk):
             if "Entrygray1" in key:
                 self.make_labels()
                 self.entry_boxes["Entry"+str(n)].insert(0,value)
-                
+                self.entry_boxes["Entry"+str(n)].get()
             elif "Text" in key:
                 self.make_new_entry()
                 self.info_boxes["infobox"+str(n)].insert('1.0',value[0])
                 replace.re_tag(self.info_boxes["infobox"+str(n)],value[1])
+                list_strs = re.findall(r"\[\[.*?\]\]", self.info_boxes["infobox"+str(n)].get("1.0",tk.END))
+                fr_strs = re.findall(r"/frac(\{.*?\}\{.*?\})", self.info_boxes["infobox"+str(n)].get("1.0",tk.END))
+                check = newframe(self.info_boxes["infobox"+str(n)])
+                print(fr_strs)
+                for listr in list_strs:
+                    neslist = ast.literal_eval(listr)
+                    check.remove_matrix(neslist)
+                for look in fr_strs:
+                    ed1 = look.strip("}{")
+                    ed2 = ed1.split("}{")
+                    check.remove_frac(look,ed2)
             elif "Photo" in key:
                 shutil.copy(value,"image_dump")
                 try:
                     imager = Image.open(value)
                     image = imager.resize((600,500))
-                    self.reimage(image)
-                    
+                    self.row_counter +=2 
+                    placeholder = ImageTk.PhotoImage(image)
+                    self.pic_boxes["picbox"+str(self.row_counter)] = tk.Label(self.frame_1, image=placeholder, bg="gray", width=placeholder.width(), height=placeholder.height())
+                    self.pic_boxes["picbox"+str(self.row_counter)].image = placeholder
+                    func = backend(self.pic_boxes["picbox"+str(self.row_counter)],self.row_counter)
+                    func.imageshow()
                 except Exception as e:
                     print(f"Error opening image: {e}")
             elif "Entrygray2" in key:
@@ -221,10 +241,10 @@ class Application(TkinterDnD.Tk):
         self.infob_info = {}
         self.pic_boxes={}
     def on_closing(self):
-        try:
-            self.create_new_state()
-        except:
-            pass
+      #  try:
+            #self.create_new_state()
+       # except:
+            #pass
         for file in os.listdir("image_dump"):
             os.remove("image_dump/"+file)
         self.is_closing = True  
