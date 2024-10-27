@@ -6,6 +6,7 @@ from tkinter import filedialog,messagebox,font, Tk,ttk,scrolledtext
 from tkinterdnd2 import TkinterDnD, DND_FILES
 from auxiliary import * 
 from stmanage import *
+from auxiliary2 import *
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
@@ -26,25 +27,26 @@ class Application(TkinterDnD.Tk):
         self.entry_boxes = {}
         self.info_boxes = {}
         self.pic_boxes={}
+        self.master_boxes = {}
         self.label_num = -1
         self.row_counter = 0 
 
         self.button_frame = tk.Frame(self)
         self.button_frame.pack(side=tk.LEFT,fill=tk.Y)
+        self.frame_1.bind("<Configure>", self.on_configure)
+        self.frame_1 = tk.Frame(self.main_canvas)
+        self.frame_2 = 
         self.current_file=None
-        self.save_directory = "saved_states"
-        self.holding_files = "image_files"
-        self.image_depot = "image_dump"
-        os.makedirs(self.save_directory, exist_ok=True)
-        os.makedirs(self.image_depot, exist_ok=True)
-        os.makedirs(self.holding_files,exist_ok=True)
+        os.makedirs("saved_states", exist_ok=True)
+        os.makedirs("image_files", exist_ok=True)
+        os.makedirs("image_dump",exist_ok=True)
 
         self.main_canvas = tk.Canvas(self)
         self.main_canvas.pack(side=tk.LEFT,fill=tk.BOTH,expand=True)
-        self.frame_1 = tk.Frame(self.main_canvas)
+        
 
         self.main_canvas.create_window((4,4),window = self.frame_1,anchor="nw")
-        self.frame_1.bind("<Configure>", self.on_configure)
+        
         self.scrollbar = tk.Scrollbar(self, orient=tk.VERTICAL, command=self.main_canvas.yview)
         self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.main_canvas.configure(yscrollcommand=self.scrollbar.set)
@@ -54,11 +56,13 @@ class Application(TkinterDnD.Tk):
         self.button2 = tk.Button(self.button_frame,text="Create Graph",command=self.create_graphs) 
         self.button3 = tk.Button(self.button_frame,text="Create Image Box",command=self.image_placer)
         self.button4 = tk.Button(self.button_frame,text="Create New Save",command=self.create_new_state)
+        self.button5 = tk.Button(self.button_frame,text="Settings",command=self.set_settings)
         self.button0.pack(pady=5,fill="x")
         self.button1.pack(pady=5,fill="x")
         #self.button2.pack(pady=5,fill="x") Uncomment if you want graphs and have windows
         self.button3.pack(pady=5,fill="x")
         self.button4.pack(pady=5,fill="x")
+        self.button5.pack(pady=5,fill="x")
     def on_configure(self,event):
         self.main_canvas.configure(scrollregion=self.main_canvas.bbox("all"))
     def make_labels(self):
@@ -103,6 +107,11 @@ class Application(TkinterDnD.Tk):
                 for photo in os.listdir("image_dump"):
                     if extract+1 == int(photo.split("_")[1][0]):
                         os.remove("image_dump/"+photo)
+    def set_settings(self):
+        for wick in self.button_frame.winfo_children():
+            wick.destroy()
+        for lick in self.frame_1.winfo_children():
+            lick.destroy()
     def create_graphs(self):
         helper = iterfuncs()
         self.row_counter +=2
@@ -123,39 +132,19 @@ class Application(TkinterDnD.Tk):
         if self.restarted==True:
             self.entry_boxes["Entry"+str(self.label_num)].insert(0,"Enter an Equation")
         self.entry_boxes["Entry"+str(self.label_num)].grid(sticky="w",row=self.label_num,column=1)
-    def create_new_state(self):
-        master = {}
-        club = ""
-        row = ""
-        photo_list = []
-        textlocs = []
-        photo_num = 0
-        fracs = []
-        func = iterfuncs()
-        new_state_name = filedialog.asksaveasfilename(
-            initialdir=self.save_directory,
-            defaultextension=".json",
-            filetypes=[("JSON", "*.json"), ("All Files", "*.*")],
-            title="Create New State")
-        if new_state_name:
-            file_name = new_state_name.split("/")[-1]
-            try:
-                os.mkdir("image_files/"+file_name[:-5]) 
-            except: 
-                pass
+    def master_maker(self):
+        club,row = "",""
+        photo_list,textlocs,fracs = [],[],[]
+        photo_num=0
         for images in os.listdir("image_dump"):
             photo_list.append(images)
-            try:
-                shutil.move("image_dump/"+images,"image_files/"+file_name[:-5])
-            except:
-                pass
-        master["Title"] = new_state_name.split("/")[-1][:-5]
+        func=iterfuncs()
         for widget in self.frame_1.winfo_children():
             club = widget.grid_info()
             row = club["row"]
             if isinstance(widget,tk.Entry): 
                 color = widget.cget("foreground")  
-                master["Entry"+color+"_"+str(row)] = widget.get()
+                self.master_boxes["Entry"+color+"_"+str(row)] = widget.get()
             elif isinstance(widget, tk.Frame):
                 for child in widget.winfo_children():
                     if isinstance(child,tk.Text): 
@@ -165,7 +154,7 @@ class Application(TkinterDnD.Tk):
                         textlocs.append(text)
                         del extratags["sel"]
                         textlocs.append(extratags)
-                        master["Text_"+str(row)] = textlocs
+                        self.master_boxes["Text_"+str(row)] = textlocs
                     elif isinstance(child,tk.Frame):
                         for grandkid in child.winfo_children():
                             if isinstance(grandkid,tk.Entry):
@@ -174,10 +163,38 @@ class Application(TkinterDnD.Tk):
                     textlocs = []
                     
             elif isinstance(widget,tk.Label):
-                master["Photo_"+str(row)] = "image_files/"+file_name[:-5]+ "/"+photo_list[photo_num]   
+                self.master_boxes["Photo_"+str(row)] = "image_dump/photo_"+photo_list[photo_num]   
                 photo_num+=1
+    def create_new_state(self):
+        photo_list = []
+        self.master_boxes ={}
+        
+        new_state_name = filedialog.asksaveasfilename(
+            initialdir="saved_states",
+            defaultextension=".json",
+            filetypes=[("JSON", "*.json"), ("All Files", "*.*")],
+            title="Create New State")
+        if new_state_name:
+            file_name = new_state_name.split("/")[-1]
+            try:
+                os.mkdir("image_files/"+file_name[:-5]) 
+            except: 
+                pass
+        self
+       
+        self.master_boxes["Title"] = new_state_name.split("/")[-1][:-5]
+        self.master_maker()
+        for images in os.listdir("image_dump"):
+            photo_list.append(images)
+            try:
+                shutil.move("image_dump/"+images,"image_files/"+file_name[:-5])
+            except:
+                pass
+        for keys,values in self.master_boxes.items():
+            if keys:
+                pass
         leak = open(new_state_name,"w")
-        json.dump(master,leak,indent=1)
+        json.dump(self.master_boxes,leak,indent=1)
         self.current_file = new_state_name
         self.reset_widgets()
         
@@ -239,10 +256,10 @@ class Application(TkinterDnD.Tk):
         self.infob_info = {}
         self.pic_boxes={}
     def on_closing(self):
-      #  try:
-            #self.create_new_state()
-       # except:
-            #pass
+        try:
+            self.create_new_state()
+        except:
+            pass
         for file in os.listdir("image_dump"):
             os.remove("image_dump/"+file)
         self.is_closing = True  
